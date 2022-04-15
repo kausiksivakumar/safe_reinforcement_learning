@@ -1,0 +1,58 @@
+{
+    "ac_kwargs":	{
+        "hidden_sizes":	[
+            64,
+            64
+        ]
+    },
+    "actor_critic":	"mlp_actor_critic",
+    "agent":	{
+        "<safe_rl.pg.agents.TRPOAgent object at 0x7f74f3bfa630>":	{
+            "backtrack_coeff":	0.8,
+            "backtrack_iters":	10,
+            "damping_coeff":	0.1,
+            "params":	{
+                "constrained":	false,
+                "learn_penalty":	false,
+                "objective_penalized":	false,
+                "penalty_param_loss":	false,
+                "reward_penalized":	false,
+                "trust_region":	true
+            }
+        }
+    },
+    "cost_gamma":	0.99,
+    "cost_lam":	0.97,
+    "cost_lim":	25,
+    "ent_reg":	0.0,
+    "env_fn":	"<function <lambda> at 0x7f7529a2ee18>",
+    "epochs":	50,
+    "gamma":	0.99,
+    "lam":	0.97,
+    "logger":	{
+        "<safe_rl.utils.logx.EpochLogger object at 0x7f752989e128>":	{
+            "epoch_dict":	{},
+            "exp_name":	null,
+            "first_row":	true,
+            "log_current_row":	{},
+            "log_headers":	[],
+            "output_dir":	"/tmp/experiments/1650001414",
+            "output_file":	{
+                "<_io.TextIOWrapper name='/tmp/experiments/1650001414/progress.txt' mode='w' encoding='UTF-8'>":	{
+                    "mode":	"w"
+                }
+            }
+        }
+    },
+    "logger_kwargs":	{},
+    "max_ep_len":	1000,
+    "penalty_init":	1.0,
+    "penalty_lr":	0.05,
+    "render":	false,
+    "save_freq":	1,
+    "seed":	0,
+    "steps_per_epoch":	4000,
+    "target_kl":	0.01,
+    "vf_iters":	80,
+    "vf_lr":	0.001
+}
