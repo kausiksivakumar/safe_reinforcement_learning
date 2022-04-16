@@ -9,7 +9,7 @@ CAP adaptation for safety_gym environment
 
 
 
-# Evaluating Baseline (from safety-starter-pack 
+# Evaluating Baseline (from safety-starter-pack)
 task: goal1, robot: point, algos: all
 
 robot_list = ['point', 'car', 'doggo']
