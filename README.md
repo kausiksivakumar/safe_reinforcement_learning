@@ -9,7 +9,7 @@ CAP adaptation for safety_gym environment
 
 
 
-#Evaluating Baseline (from safety-starter-pack 
+# Evaluating Baseline (from safety-starter-pack 
 task: goal1, robot: point, algos: all
 
 robot_list = ['point', 'car', 'doggo']
@@ -18,4 +18,5 @@ algo_list = ['ppo', 'ppo_lagrangian', 'trpo', 'trpo_lagrangian', 'cpo']
     
 Ex:
 `time python experiment.py --algo cpo --task goal1 --robot point --seed 20`
-Add `--cpu` to use more than one core Ex `--cpu 4` to use 4 cores
+
+ Add `--cpu` to use more than one core Ex `--cpu 4` to use 4 cores
