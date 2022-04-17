@@ -1,4 +1,4 @@
-# safe_reinforcement_learning
+# Safe Reinforcement Learning
 CAP adaptation for safety_gym environment
 
 #Installation
