@@ -20,3 +20,7 @@ Ex:
 `time python experiment.py --algo cpo --task goal1 --robot point --seed 20`
 
  Add `--cpu` to use more than one core Ex `--cpu 4` to use 4 cores
+ 
+ # Dimensions of gym
+ action_space - `Box(2,) [-1,1]`
+ observation_space - `Box(60,) [-inf,inf]`
