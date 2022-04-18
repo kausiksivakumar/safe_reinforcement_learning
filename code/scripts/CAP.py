@@ -247,18 +247,18 @@ def main():
         
     ###########Initial Buffer Training##############################
     data_num = 0
-    dynamics_model = RegressionModel(state_dim,action_dim)#.to(device)
+    dynamics_model = RegressionModel(state_dim+action_dim,state_dim)#.to(device)
     reward_model   = rewardModel(state_dim)#.to(device)
     cost_model     = costModel(state_dim)#.to(device)
     
-    for epi in tqdm.tqdm(range(10000)):
-        obs = env.observation_space.sample()
+    for epi in tqdm.tqdm(range(10)):
+        obs = env.reset()
         done = False
         i = 0
         while not done and i<500:
             action = env.action_space.sample()
             obs_next, reward, done, info = env.step(action)
-            if not info["goal_met"] and not done:  # otherwise the goal position will change
+            if not done:  # otherwise the goal position will change
                 x, y = np.concatenate((obs, action)), obs_next
                 dynamics_model.add_data_point(x, y)
                 cost = info["cost"] 
