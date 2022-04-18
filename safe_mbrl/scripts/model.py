@@ -98,7 +98,7 @@ class RegressionModel:
             out = self.model(inputs)
             # out = CPU(out)
             out = out * (self.label_sigma) + self.label_mu
-            out = out.numpy()
+            # out = out.numpy()
         return out
 
     def reset_dataset(self, new_dataset = None):
@@ -168,6 +168,7 @@ class RegressionModel:
             train_loader, test_loader = self.make_dataloader(x, y, normalize = normalize)
         
         for epoch in range(epochs):
+            print ("epoch no: ", epoch)
             self.model.train()
             loss_train = 0
             loss_test = 1e5
@@ -194,7 +195,7 @@ class RegressionModel:
                 else:
                     print(f"training epoch [{epoch}/{self.n_epochs}],loss train: {loss_train:.4f}, no testing data")
                 loss_unormalized = self.test(x[::50], y[::50])
-                print("loss unnormalized: ", loss_unormalized)
+                print("loss unnormalized: ", loss_unormalized, epoch)
 
                 if loss_test < best_loss:
                     best_loss = loss_test

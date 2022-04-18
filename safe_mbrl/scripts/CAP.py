@@ -9,8 +9,8 @@ from scripts.constraint_model import costModel,rewardModel
 import tqdm
 import torch.optim as optim
 
-device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-
+# device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+device = torch.device("cpu")
 class Memory:
     def __init__(self):
         self.actions = []
@@ -101,67 +101,67 @@ class PPO:
         state = torch.FloatTensor(state.reshape(1, -1)).to(device)
         return self.policy_old.act(state, memory).cpu().data.numpy().flatten()
     
-    def rollout(self,policy,initial_state,dynamics_model,cost_model,reward_model):
-        curr_state                                                          = initial_state
-        logp_list                                                           = []
-        actions_raw                                                         = []
+    def rollout(self,policy,initial_state,dynamics_model,cost_model,reward_model, H=30):
+        curr_state                                                          = torch.tensor(initial_state)
         exp_reward                                                          = 0
         exp_cost                                                            = 0
         gamma_cost                                                          = 0.99
         gamma_reward                                                        = 0.99
-        
-        H                                                                   = 30
+
+        actions_raw = torch.zeros((H, 2))
+        logp_list = torch.zeros((H, 1))
         for i in range(H): 
             a, logp_pi,_,_                                                  = self.policy.evaluate(curr_state)
-            next_state                                                      = dynamics_model(initial_state,a)
+            # print ("shapes: ", a.shape, curr_state.shape)
+            next_state = dynamics_model.predict(torch.cat((curr_state, a)))
+            next_state = next_state[0, :]
             cost                                                            = cost_model(next_state)
             reward                                                          = reward_model(next_state)
             curr_state                                                      = next_state
             exp_cost                                                        += (gamma_cost**i)*cost
             exp_reward                                                      += (gamma_reward**i)*reward
-            actions_raw.append(a)
-            logp_list.append(logp_pi)
-            
-        actions_raw                                                         =   np.array(actions_raw)
-        logp_list                                                           =   np.array(logp_list)
+            actions_raw[i] = a[:]
+            logp_list[i] = logp_pi
+
         return curr_state ,logp_list  ,actions_raw,exp_reward ,exp_cost
     
-    def CCEM(self,env,I,N,policy,dynamics_model,cost_model,reward_model,C = 10,E = 50):
+    def CCEM(self,env,policy,dynamics_model,cost_model,reward_model, I, N, C = 10,E = 50, H=30):
         initial_state                                                   =   env.observation_space.sample()
         obj                                                             =   0
         for i in range(I):
-            cost_traj                                                   =   []
-            reward_traj                                                 =   []
-            action_sequence                                             =   []
+            cost_traj                                                   =   torch.zeros((N))
+            reward_traj                                                 =   torch.zeros((N))
+            action_sequence                                             =   torch.zeros((N, H, 2))
             feasible_set_idx                                            =   []
-            loglist                                                     =   []
+            loglist                                                     =   torch.zeros((N, H))
             for traj in range(N):
                 curr_state ,logp_list ,actions_raw,exp_reward ,exp_cost = self.rollout(policy,initial_state,dynamics_model,cost_model,reward_model)
                 if(exp_cost<=C):
                     feasible_set_idx.append(traj)
-                cost_traj.append(exp_cost)
-                reward_traj.append(exp_reward)
-                action_sequence.append(actions_raw)
-                loglist.append(logp_list)
-                
-            cost_traj                                                   =   np.array(cost_traj)
-            reward_traj                                                 =   np.array(reward_traj)
-            action_sequence                                             =   np.array(action_sequence)
-            feasible_set_idx                                            =   np.array(feasible_set_idx)
-            elite_set_idxs                                              =   np.zeros((E,))
-            logp_list                                                   =   np.array(loglist)
+                cost_traj[traj] = exp_cost
+                reward_traj[traj] = exp_reward
+                action_sequence[traj, :]  = actions_raw
+                loglist[traj, :] = logp_list[:, 0]
+
+            # cost_traj                                                   =   np.array(cost_traj)
+            # reward_traj                                                 =   np.array(reward_traj)
+            # action_sequence                                             =   np.array(action_sequence)
+            feasible_set_idx                                              =   np.array(feasible_set_idx)
+            # elite_set_idxs                                              =   np.zeros((E,))
+            # logp_list                                                   =   np.array(loglist)
             
             if(len(feasible_set_idx)<E):
-                sorted_idxs                                             =   np.argsort(cost_traj)
+                sorted_idxs                                             =   torch.argsort(cost_traj)
                 elite_set_idxs                                          =   sorted_idxs[:E]
                 
             else:
-                sorted_idxs                                             =   np.argsort(-reward_traj)
-                elite_set_idxs                                          =   np.where(cost_traj[sorted_idxs]<C).flatten()[:E]
+                sorted_idxs                                             =   torch.argsort(-reward_traj)
+                elite_set_idxs                                          =   torch.where(cost_traj[sorted_idxs]<C)[0][:E]
              
             baseline                                                    =   reward_traj[elite_set_idxs].mean()
             ret                                                         =   reward_traj[elite_set_idxs] - baseline
-            obj                                                         +=   -((np.diag(ret)@loglist).mean(axis=1)).mean()
+            loglist_elite                                               =   loglist[elite_set_idxs]
+            obj                                                         +=   -((torch.diag(ret)@loglist_elite).mean(axis=1)).mean()
             
         obj/=I
         return(obj)    
@@ -187,8 +187,8 @@ class PPO:
         old_logprobs = torch.squeeze(torch.stack(memory.logprobs), 1).to(device).detach()
         '''
         # Optimize policy for K epochs:
-        for _ in range(self.K_epochs):
-            loss = self.CCEM(env,5,500,self.policy,dynamics_model,cost_model,reward_model,C = 10,E = 50)
+        for _ in tqdm.tqdm(range(10)):
+            loss = self.CCEM(env, self.policy,dynamics_model,cost_model,reward_model, I=1, N=50, C = 10, E = 50, H=30)
             # Evaluating old actions and values :
             # logprobs, state_values, dist_entropy = self.policy.evaluate(old_states, old_actions)
             
@@ -250,12 +250,14 @@ def main():
     dynamics_model = RegressionModel(state_dim+action_dim,state_dim)#.to(device)
     reward_model   = rewardModel(state_dim)#.to(device)
     cost_model     = costModel(state_dim)#.to(device)
+    pretrain_eps = 10
+    Horizon = 500
     
-    for epi in tqdm.tqdm(range(10)):
+    for epi in tqdm.tqdm(range(pretrain_eps)):
         obs = env.reset()
         done = False
         i = 0
-        while not done and i<500:
+        while not done and i<Horizon:
             action = env.action_space.sample()
             obs_next, reward, done, info = env.step(action)
             if not done:  # otherwise the goal position will change
@@ -273,15 +275,31 @@ def main():
     # optimizer_dynamics =  optim.Adam(dynamics_model.parameters(),lr=0.01)
     optimizer_reward   =  optim.Adam(reward_model.parameters(),lr=0.01)  
     optimizer_cost     =  optim.Adam(cost_model.parameters(),lr=0.01)  
-    epochs = 500 #change this when running 
+    epochs = 5 #change this when running
 
     dynamics_model.fit(epochs=epochs)
     cost_model.fit(epochs=epochs,optimizer=optimizer_cost)
     reward_model.fit(epochs=epochs,optimizer=optimizer_reward)
-    
-    
-    #################################################################################
 
+    #################################################################################
+    memory = Memory()
+    ppo = PPO(state_dim, action_dim, action_std, lr, betas, gamma, K_epochs, eps_clip)
+    epochs = 5
+
+    for i_episode in tqdm.tqdm(range(1, max_episodes + 1)):
+        dynamics_model.fit(epochs=epochs)
+        cost_model.fit(epochs=epochs, optimizer=optimizer_cost)
+        reward_model.fit(epochs=epochs, optimizer=optimizer_reward)
+
+        ppo.update(env, memory, dynamics_model, cost_model, reward_model)
+        print ("eps: ", i_episode)
+
+
+
+
+
+
+    #################################################################################
     memory = Memory()
     ppo = PPO(state_dim, action_dim, action_std, lr, betas, gamma, K_epochs, eps_clip)
     print(lr,betas)
