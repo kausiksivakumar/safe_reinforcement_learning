@@ -7,6 +7,7 @@ import safety_gym
 from scripts.model import RegressionModel
 from scripts.constraint_model import costModel,rewardModel
 import tqdm
+import torch.optim as optim
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
@@ -165,7 +166,7 @@ class PPO:
         obj/=I
         return(obj)    
 
-    def update(self,env, memory):
+    def update(self,env, memory,dynamics_model,cost_model,reward_model):
         # Monte Carlo estimate of rewards:
         '''
         rewards = []
@@ -246,9 +247,9 @@ def main():
         
     ###########Initial Buffer Training##############################
     data_num = 0
-    dynamics_model = RegressionModel()
-    reward_model   = rewardModel()
-    cost_model     = costModel()
+    dynamics_model = RegressionModel(state_dim,action_dim)#.to(device)
+    reward_model   = rewardModel(state_dim)#.to(device)
+    cost_model     = costModel(state_dim)#.to(device)
     
     for epi in tqdm.tqdm(range(10000)):
         obs = env.observation_space.sample()
@@ -269,13 +270,14 @@ def main():
     print("Finish to collect %i data "%data_num)
     
     ##############Training Loop#################################################
-    
+    # optimizer_dynamics =  optim.Adam(dynamics_model.parameters(),lr=0.01)
+    optimizer_reward   =  optim.Adam(reward_model.parameters(),lr=0.01)  
+    optimizer_cost     =  optim.Adam(cost_model.parameters(),lr=0.01)  
     epochs = 500 #change this when running 
-    # for i in range(epochs):
-        
-    
-    
-    
+
+    dynamics_model.fit(epochs=epochs)
+    cost_model.fit(epochs=epochs,optimizer=optimizer_cost)
+    reward_model.fit(epochs=epochs,optimizer=optimizer_reward)
     
     
     #################################################################################
