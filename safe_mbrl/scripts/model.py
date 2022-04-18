@@ -67,7 +67,7 @@ class RegressionModel:
         if config["load"]:
             self.load_data(config["load_folder"])
         else:
-            self.model = CUDA(MLPRegression(self.input_dim, self.output_dim, config["hidden_sizes"], activation=activ_f))
+            self.model = MLPRegression(self.input_dim, self.output_dim, config["hidden_sizes"], activation=activ_f)
 
         self.criterion = nn.MSELoss(reduction='mean')
         self.optimizer = torch.optim.Adam(self.model.parameters(), lr=self.lr)
@@ -93,10 +93,10 @@ class RegressionModel:
         self.model.eval()
         inputs = data if torch.is_tensor(data) else torch.tensor(data).float()
         inputs = (inputs-self.mu) / (self.sigma)
-        inputs = CUDA(inputs)
+        # inputs = CUDA(inputs)
         with torch.no_grad():
             out = self.model(inputs)
-            out = CPU(out)
+            # out = CPU(out)
             out = out * (self.label_sigma) + self.label_mu
             out = out.numpy()
         return out
@@ -149,7 +149,7 @@ class RegressionModel:
 
         return train_loader, test_loader
 
-    def fit(self, x=None, y=None, use_data_buf=True, normalize=True):
+    def fit(self, x=None, y=None, use_data_buf=True, normalize=True,epochs=100):
         '''
         Train the model either from external data or internal data buf.
         @param x [list or ndarray, (batch, input_dim)]
@@ -167,13 +167,13 @@ class RegressionModel:
         else: # use external data loader
             train_loader, test_loader = self.make_dataloader(x, y, normalize = normalize)
         
-        for epoch in range(self.n_epochs):
+        for epoch in range(epochs):
             self.model.train()
             loss_train = 0
             loss_test = 1e5
             for datas, labels in train_loader:
-                datas = CUDA(datas)
-                labels = CUDA(labels)
+                # datas = CUDA(datas)
+                # labels = CUDA(labels)
                 self.optimizer.zero_grad()
 
                 outputs = self.model(datas)
@@ -227,20 +227,20 @@ class RegressionModel:
         ----------
             @return loss [list, (T - his_len + 1)]
         '''
-        states = CUDA(states)
-        actions = CUDA(actions)
-        labels = CUDA(labels)
+        # states = CUDA(states)
+        # actions = CUDA(actions)
+        # labels = CUDA(labels)
         
         T, batch_size, state_dim = states.shape
 
-        rollouts = CUDA(torch.zeros(labels.shape)) # [T, B, s]
+        rollouts = torch.zeros(labels.shape) # [T, B, s]
 
         with torch.no_grad():
             for t in range(T):
                 inputs = torch.cat((states[t], actions[t]), dim = 1)
-                inputs = (inputs- CUDA(self.mu)) / CUDA(self.sigma)
+                inputs = (inputs- self.mu) / self.sigma
                 outputs = self.model(inputs) # [B, s]
-                outputs = outputs * CUDA(self.label_sigma) + CUDA(self.label_mu)
+                outputs = outputs * self.label_sigma + self.label_mu
                 rollouts[t] = outputs
 
         targets = labels # [T, B, s]
@@ -277,8 +277,8 @@ class RegressionModel:
         self.model.eval()
         loss_test = 0
         for datas, labels in testloader:
-            datas = CUDA(datas)
-            labels = CUDA(labels)
+            # datas = CUDA(datas)
+            # labels = CUDA(labels)
             outputs = self.model(datas)
             loss = self.criterion(outputs, labels)
             loss_test += loss.item()*datas.shape[0]
@@ -295,8 +295,8 @@ class RegressionModel:
         pred = self.predict(data) 
         #mse = np.mean((pred-label)**2)
         #print("MSE: ", mse)
-        pred = CUDA(torch.tensor(pred).float())
-        labels = CUDA(torch.tensor(label).float())
+        pred = torch.tensor(pred).float()
+        labels = torch.tensor(label).float()
         loss = self.criterion(pred, labels)
         return loss.item()
 
@@ -314,7 +314,7 @@ class RegressionModel:
     def load_model(self, path):
         checkpoint = torch.load(path)
         self.model = checkpoint["model_state_dict"]
-        self.model = CUDA(self.model)
+        # self.model = CUDA(self.model)
         self.optimizer = torch.optim.Adam(self.model.parameters(), lr=self.lr)
         self.mu = checkpoint["mu"]
         self.sigma = checkpoint["sigma"]
@@ -366,7 +366,7 @@ class Classifier:
         if config["load"]:
             self.load_model(config["load_path"])
         else:
-            self.model = CUDA(MLPCategorical(self.input_dim, self.output_dim, config["hidden_sizes"], activation=activ_f))
+            self.model = MLPCategorical(self.input_dim, self.output_dim, config["hidden_sizes"], activation=activ_f)
 
         self.criterion = nn.NLLLoss()
         self.optimizer = torch.optim.Adam(self.model.parameters(), lr=self.lr)
@@ -392,7 +392,7 @@ class Classifier:
         self.model.eval()
         inputs = torch.tensor(data).float()
         inputs = (inputs-self.mu) / (self.sigma)
-        inputs = CUDA(inputs)
+        # inputs = CUDA(inputs)
         with torch.no_grad():
             out = self.model(inputs)
             out = CPU(out.argmax(dim=1, keepdim=True))  # get the index, [batch, 1])
@@ -444,8 +444,8 @@ class Classifier:
             loss_train, acc_train = 0, 0
             self.model.train()
             for datas, labels in train_loader:
-                datas = CUDA(datas)
-                labels = CUDA(labels)
+                # datas = CUDA(datas)
+                # labels = CUDA(labels)
 
                 self.optimizer.zero_grad()
                 outputs = self.model(datas)
@@ -482,8 +482,8 @@ class Classifier:
         self.model.eval()
         loss_test, acc_test = 0, 0
         for datas, labels in testloader:
-            datas = CUDA(datas)
-            labels = CUDA(labels)
+            # datas = CUDA(datas)
+            # labels = CUDA(labels)
             outputs = self.model(datas)
             labels = torch.squeeze(labels)
             loss = self.criterion(outputs, labels)
@@ -502,8 +502,8 @@ class Classifier:
         @param label [list or ndarray, (batch, output_dim)]
         '''
         pred = self.predict(data) 
-        pred = CUDA(torch.tensor(pred).long())
-        labels = CUDA(torch.tensor(label).long())
+        pred = torch.tensor(pred).long()
+        labels = torch.tensor(label).long()
         acc = pred.eq(labels.view_as(pred)).mean().item()
         return acc
 
@@ -521,7 +521,7 @@ class Classifier:
     def load_model(self, path):
         checkpoint = torch.load(path)
         self.model = checkpoint["model_state_dict"]
-        self.model = CUDA(self.model)
+        # self.model = CUDA(self.model)
         self.mu = checkpoint["mu"]
         self.sigma = checkpoint["sigma"]
         self.optimizer = torch.optim.Adam(self.model.parameters(), lr=self.lr)
