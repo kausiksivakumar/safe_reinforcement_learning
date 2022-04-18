@@ -278,8 +278,6 @@ def main():
     dynamics_model.fit(epochs=epochs)
     cost_model.fit(epochs=epochs,optimizer=optimizer_cost)
     reward_model.fit(epochs=epochs,optimizer=optimizer_reward)
-    
-    
     #################################################################################
 
     memory = Memory()
