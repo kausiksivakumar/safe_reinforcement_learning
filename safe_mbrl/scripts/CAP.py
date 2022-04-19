@@ -102,12 +102,9 @@ class ActorCritic(nn.Module):
 
 
 class PPO:
-    def __init__(self, state_dim, action_dim, action_std, lr, betas, gamma, K_epochs, eps_clip, gamma_cost, gamma_rew):
-        self.lr = lr
+    def __init__(self, state_dim, action_dim, lr, action_std, betas, gamma_cost, gamma_rew):
         self.betas = betas
-        self.gamma = gamma
-        self.eps_clip = eps_clip
-        self.K_epochs = K_epochs
+        self.lr = lr
 
         self.policy = ActorCritic(state_dim, action_dim, action_std).to(device)
         self.optimizer = torch.optim.Adam(self.policy.parameters(), lr=lr, betas=betas)
@@ -115,8 +112,8 @@ class PPO:
         self.policy_old = ActorCritic(state_dim, action_dim, action_std).to(device)
         self.policy_old.load_state_dict(self.policy.state_dict())
 
-        self.gamma_cost = gamma_cost = 0.99
-        self.gamma_reward = gamma_rew = 0.99
+        self.gamma_cost = gamma_cost
+        self.gamma_reward = gamma_rew
 
         # self.MseLoss = nn.MSELoss()
 
@@ -188,7 +185,7 @@ class PPO:
         obj /= I
         return (obj)
 
-    def update(self, env, memory, dynamics_model, cost_model, reward_model, I =1,N =50,C=10,E=50, H= 30):
+    def update(self, env, memory, dynamics_model, cost_model, reward_model, K_epochs = 5, I =1, N =50,C=10,E=50, H= 30):
         # Monte Carlo estimate of rewards:
         '''
         rewards = []
@@ -209,7 +206,7 @@ class PPO:
         old_logprobs = torch.squeeze(torch.stack(memory.logprobs), 1).to(device).detach()
         '''
         # Optimize policy for K epochs:
-        for _ in tqdm.tqdm(range(10)):
+        for _ in tqdm.tqdm(range(K_epochs)):
             loss = self.CCEM(env, self.policy, dynamics_model, cost_model, reward_model, I=I, N=N, C=C, E=E, H=H)
             # take gradient step
             self.optimizer.zero_grad()
@@ -253,19 +250,6 @@ def main():
     ############## Hyperparameters ##############
     env_name = "Safexp-PointGoal1-v0"
     render = True
-    solved_reward = 300  # stop training if avg_reward > solved_reward
-    log_interval = 20  # print avg reward in the interval
-
-    max_timesteps = 1500  # max timesteps in one episode
-
-    update_timestep = 4000  # update policy every n timesteps
-    action_std = 0.5  # constant std for action distribution (Multivariate Normal)
-    K_epochs = 80  # update policy for K epochs
-    eps_clip = 0.2  # clip parameter for PPO
-    gamma = 0.99  # discount factor
-
-    lr = 0.0003  # parameters for Adam optimizer
-    betas = (0.9, 0.999)
 
     random_seed = None
     #############################################
@@ -291,6 +275,7 @@ def main():
     Horizon = 500
     gamma_cost = 0.99
     gamma_rew = 0.99
+
     dynamics_model = RegressionModel(state_dim + action_dim, state_dim, config=DEFAULT_CONFIG)  # .to(device)
     reward_model = rewardModel(state_dim, config=DEFAULT_CONFIG)  # .to(device)
     cost_model = costModel(state_dim, config=DEFAULT_CONFIG)  # .to(device)
@@ -332,24 +317,34 @@ def main():
 
     ####################### Main Loop ###########################
     print ("####################### Main Loop ###########################")
-    memory = Memory()
-    ppo = PPO(state_dim, action_dim, action_std, lr, betas, gamma, K_epochs, eps_clip, gamma_cost, gamma_rew)
-    epochs = 10
-    fill_buffer_eps = 100
+
+    # Set Hyperparams
+    lr = 0.003   # for policy gradient
+    epochs = 10  # CAP epochs for model fitting
+    fill_buffer_eps = 100  # no of ep for fill buffer with updated policy
     kappa = 10  # initially high to be more conservative
     alpha = 0.1  # learning rate for kappa
-    C = 10
-    I = 1
-    N = 50
-    E = 50
-    eval_freq = 10
+    k_epochs = 5
+    C = 10 # Cost threshold
+    I = 1  # No of iterations to avergae out for one polcy gradient step
+    N = 64 # No of trajectories per I
+    E = 50 # Elite set size
+    max_episodes = 10000  # max training episodes
+    action_std = 0.5  # constant std for action distribution (Multivariate Normal)
+    betas = (0.9, 0.999)
+
+    eval_freq = 1
     eval_traj_num = 5
     save_every = 100
-    max_episodes = 10000  # max training episodes
 
     eval_cost = []
     eval_rew = []
     kappa_list = []
+    cost_rate = []
+    eval_eplen = []
+
+    memory = Memory()
+    ppo = PPO(state_dim, action_dim, lr, action_std, betas, gamma_cost, gamma_rew)
 
     for i_episode in tqdm.tqdm(range(1, max_episodes + 1)):
         print("Main loop eps: : ", i_episode)
@@ -360,7 +355,7 @@ def main():
 
         print ("Dynamics model fit complete")
 
-        ppo.update(env, memory, dynamics_model, cost_model, reward_model,I =I,N =N,C=C,E=E, H= Horizon )
+        ppo.update(env, memory, dynamics_model, cost_model, reward_model,K_epochs = k_epochs, I =I,N =N,C=C,E=E, H= Horizon )
 
         print ("Policy Gradient update complete")
 
@@ -376,17 +371,23 @@ def main():
         print("Kappa Update Complete")
 
         if i_episode % eval_freq == 0:
-            avg_cost = 0
-            avg_reward = 0
+            cum_cost_sum = 0
+            reward_sum = 0
+            eplen_sum = 0
             for t in range(eval_traj_num):
-                c, r = evaluate(env_test, ppo, Horizon, gamma_cost, gamma_rew)
-                avg_cost += c
-                avg_reward += r
+                c_exp, r_exp, c_cum, r_cum, eplen = evaluate(env_test, ppo, Horizon, gamma_cost, gamma_rew)
+                cum_cost_sum += c_cum
+                reward_sum += r_exp
+                eplen_sum += eplen
 
-            avg_cost = avg_cost / eval_traj_num
-            avg_reward = avg_reward / eval_traj_num
+            avg_cum_cost = cum_cost_sum / eval_traj_num
+            avg_reward = reward_sum / eval_traj_num
+            avg_eplen = eplen_sum / eval_traj_num
+
             eval_rew.append(avg_reward)
-            eval_cost.append(avg_cost)
+            eval_cost.append(avg_cum_cost)
+            cost_rate.append(avg_cum_cost/(i_episode*avg_eplen))
+            eval_eplen.append(avg_eplen)
             print('Eval: Episode {} \t Avg Cost {} \t Avg Reward: {}'.format(i_episode, avg_cost, avg_reward))
 
         # save every 500 episodes
@@ -396,23 +397,45 @@ def main():
     # save final trained policy
     torch.save(ppo.policy.state_dict(), './PPO_continuous_fin_{}.pth'.format(env_name))
 
+    eval_cost = np.array(eval_cost)
+    eval_rew = np.array(eval_rew)
+    kappa_list = np.array(kappa_list)
+    cost_rate = np.array(cost_rate)
+    eval_eplen = np.array(eval_eplen)
+    total_env_interacts = np.cumsum(eval_eplen).astype('int')
+
     plt.figure()
-    plt.plot(np.arange(len(eval_rew)), eval_rew, label='eval rewards')
+    plt.plot(total_env_interacts, eval_rew, label='eval rewards')
     plt.title("eval reward")
     plt.savefig('eval_rewards.png')
     # plt.show()
 
     plt.figure()
-    plt.plot(np.arange(len(eval_cost)), eval_cost, label='eval costs')
+    plt.plot(total_env_interacts, eval_cost, label='eval costs')
     plt.title("eval cost")
     plt.savefig('eval_cost.png')
     # plt.show()
 
     plt.figure()
-    plt.plot(np.arange(len(kappa_list)), kappa_list, label='kappa')
+    plt.plot(total_env_interacts, cost_rate, label='cost rate')
+    plt.title("cost rate plot")
+    plt.savefig('cost_rate_plot.png')
+
+    plt.figure()
+    plt.plot(total_env_interacts, kappa_list, label='kappa')
     plt.title("kappa plot")
     plt.savefig('kappa_plot.png')
     # plt.show()
+
+    plt.figure()
+    plt.plot(total_env_interacts, eval_eplen, label='eplen')
+    plt.title("Episode length plot")
+    plt.savefig('eplen_plot.png')
+
+
+    out = np.array([np.arange(max_episodes), eval_rew, eval_cost, eval_eplen, cost_rate, total_env_interacts]).T
+    np.savetxt("stats.txt", out, delimiter=" ", fmt='%10.5f', header="Epoch AverageEpRet  AverageEpCost EpLen CostRate TotalEnvInteracts")
+
 
     print ("##########################Complete!##################################")
     ################################################################################
@@ -422,16 +445,21 @@ def main():
 def evaluate(env, ppo, Horizon, gamma_cost, gamma_rew):
     obs = env.reset()
     exp_cost, exp_rew = 0, 0
+    cum_cost, cum_reward = 0, 0
+    eplen = 0
     for i in range(Horizon):
         act = generate_action(env, random_flag=False, state=obs, ppo_object=ppo)
         obs_next, rew, done, info = env.step(act)
         exp_cost += gamma_cost ** i * info['cost']
         exp_rew += gamma_rew ** i * rew
+        cum_cost += info['cost']
+        cum_reward += rew
+        eplen += 1
         if done:
             break
         obs = obs_next
 
-    return exp_cost, exp_rew
+    return exp_cost, exp_rew, cum_cost, cum_reward, eplen
 
 
 if __name__ == '__main__':
