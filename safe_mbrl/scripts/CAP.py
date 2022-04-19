@@ -19,8 +19,7 @@ DEFAULT_CONFIG = dict(
                 batch_size=256,
                 hidden_sizes=(1024, 1024, 1024),
                 buffer_size=500000,
-
-                save=False,
+                save=True,
                 save_folder='./data',
                 load=False,
                 load_folder='./data',
@@ -189,7 +188,7 @@ class PPO:
         obj /= I
         return (obj)
 
-    def update(self, env, memory, dynamics_model, cost_model, reward_model, C=10):
+    def update(self, env, memory, dynamics_model, cost_model, reward_model, I =1,N =50,C=10,E=50, H= 30):
         # Monte Carlo estimate of rewards:
         '''
         rewards = []
@@ -211,7 +210,7 @@ class PPO:
         '''
         # Optimize policy for K epochs:
         for _ in tqdm.tqdm(range(10)):
-            loss = self.CCEM(env, self.policy, dynamics_model, cost_model, reward_model, I=1, N=50, C=C, E=50, H=30)
+            loss = self.CCEM(env, self.policy, dynamics_model, cost_model, reward_model, I=I, N=N, C=C, E=E, H=H)
             # take gradient step
             self.optimizer.zero_grad()
             loss.mean().backward()
@@ -285,7 +284,8 @@ def main():
 
     ###########Initial Buffer Fill##############################
     print ("###########Initial Buffer Fill##############################")
-    load = False
+    load_data = False
+    load_model = False
     path = './data/'
     pretrain_eps = 10000
     Horizon = 500
@@ -294,7 +294,7 @@ def main():
     dynamics_model = RegressionModel(state_dim + action_dim, state_dim, config=DEFAULT_CONFIG)  # .to(device)
     reward_model = rewardModel(state_dim, config=DEFAULT_CONFIG)  # .to(device)
     cost_model = costModel(state_dim, config=DEFAULT_CONFIG)  # .to(device)
-    if not load:
+    if not load_data:
         fill_buffer(env, dynamics_model, cost_model, reward_model, random_flag=True, ppo=None, Horizon=Horizon,
                     num_episodes=pretrain_eps)
         # SAVE DATA ###############################
@@ -313,9 +313,9 @@ def main():
     # optimizer_dynamics =  optim.Adam(dynamics_model.parameters(),lr=0.01)
     optimizer_reward = optim.Adam(reward_model.parameters(), lr=0.01)
     optimizer_cost = optim.Adam(cost_model.parameters(), lr=0.01)
-    epochs = 2  # change this when running
+    epochs = 1000  # change this when running
 
-    if not load:
+    if not load_model:
         dynamics_model.fit(epochs=epochs)
         cost_model.fit(epochs=epochs, optimizer=optimizer_cost)
         reward_model.fit(epochs=epochs, optimizer=optimizer_reward)
@@ -339,6 +339,9 @@ def main():
     kappa = 10  # initially high to be more conservative
     alpha = 0.1  # learning rate for kappa
     C = 10
+    I = 1
+    N = 50
+    E = 50
     eval_freq = 10
     eval_traj_num = 5
     save_every = 100
@@ -357,7 +360,7 @@ def main():
 
         print ("Dynamics model fit complete")
 
-        ppo.update(env, memory, dynamics_model, cost_model, reward_model, C)
+        ppo.update(env, memory, dynamics_model, cost_model, reward_model,I =I,N =N,C=C,E=E, H= Horizon )
 
         print ("Policy Gradient update complete")
 

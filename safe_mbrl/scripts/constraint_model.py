@@ -94,9 +94,9 @@ class costModel(nn.Module):
                 loss_test = -0.1234
                 if len(test_loader) > 0:
                     loss_test = self.test_model(test_loader)
-                    print(f"training epoch cost[{epoch}/{self.n_epochs}],loss train cost: {loss_train:.4f}, loss test cost  {loss_test:.4f}")
+                    print(f"training epoch cost[{epoch}/{epochs}],loss train cost: {loss_train:.4f}, loss test cost  {loss_test:.4f}")
                 else:
-                    print(f"training epoch cost [{epoch}/{self.n_epochs}],loss train cost : {loss_train:.4f}, no testing data")
+                    print(f"training epoch cost [{epoch}/{epochs}],loss train cost : {loss_train:.4f}, no testing data")
                 loss_unormalized = self.test(x[::50], y[::50])
                 print("loss unnormalized cost: ", loss_unormalized)
 
@@ -328,9 +328,9 @@ class rewardModel(nn.Module):
                 loss_test = -0.1234
                 if len(test_loader) > 0:
                     loss_test = self.test_model(test_loader)
-                    print(f"training epoch Reward [{epoch}/{self.n_epochs}],loss train Reward: {loss_train:.4f}, loss test Reward {loss_test:.4f}")
+                    print(f"training epoch Reward [{epoch}/{epochs}],loss train Reward: {loss_train:.4f}, loss test Reward {loss_test:.4f}")
                 else:
-                    print(f"training epoch Reward[{epoch}/{self.n_epochs}],loss train Reward: {loss_train:.4f}, no testing data")
+                    print(f"training epoch Reward[{epoch}/{epochs}],loss train Reward: {loss_train:.4f}, no testing data")
                 loss_unormalized = self.test(x[::50], y[::50])
                 print("loss unnormalized Reward: ", loss_unormalized)
 
