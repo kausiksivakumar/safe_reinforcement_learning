@@ -13,24 +13,8 @@ import torch.nn as nn
 from torch.utils.data import TensorDataset, DataLoader, random_split
 from safe_rl.mbrl.models.base import MLPRegression, MLPCategorical, CUDA, CPU, combined_shape, DataBuffer
 
-DEFAULT_CONFIG = dict(
-                n_epochs=100,
-                learning_rate=0.001,
-                batch_size=256,
-                hidden_sizes=(1024, 1024, 1024),
-                buffer_size=500000,
-
-                save=False,
-                save_folder=None,
-                load=False,
-                load_folder=None,
-                test_freq=2,
-                test_ratio=0.1,
-                activation="relu",
-            )
-
 class RegressionModel:
-    def __init__(self, input_dim, output_dim, config=DEFAULT_CONFIG):
+    def __init__(self, input_dim, output_dim, config=None):
         super().__init__()
 
         self.input_dim = input_dim
@@ -61,7 +45,7 @@ class RegressionModel:
             else:
                 os.makedirs(self.folder)
             self.data_buf_path = osp.join(self.folder, "dynamic_data_buf.pkl")
-            self.model_path = osp.join(self.folder, "dynamic_model.pkl")
+            # self.model_path = osp.join(self.folder, "dynamic_model.pkl")
             #self.save_freq = config["save_freq"]
             #self.save_path = config["save_path"]
         if config["load"]:
@@ -323,17 +307,17 @@ class RegressionModel:
         self.label_sigma = checkpoint["label_sigma"]
 
     def save_data(self):
-        self.save_model(self.model_path)
+        # self.save_model(self.model_path)
         self.data_buf.save(self.data_buf_path)
         print("Successfully save model and data buffer to %s"%self.folder)
 
     def load_data(self, path):
-        model_path = osp.join(path, "dynamic_model.pkl")
-        if osp.exists(model_path):
-            self.load_model(model_path)
-            print("Loading dynamic model from %s ."%model_path)
-        else:
-            print("We can not find the model from %s"%model_path)
+        # model_path = osp.join(path, "dynamic_model.pkl")
+        # if osp.exists(model_path):
+        #     self.load_model(model_path)
+        #     print("Loading dynamic model from %s ."%model_path)
+        # else:
+        #     print("We can not find the model from %s"%model_path)
         data_buf_path = osp.join(path, "dynamic_data_buf.pkl")
         if osp.exists(data_buf_path):
             print("Loading dynamic data buffer from %s ."%data_buf_path)

@@ -13,6 +13,22 @@ import torch.optim as optim
 # device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 device = torch.device("cpu")
 
+DEFAULT_CONFIG = dict(
+                n_epochs=100,
+                learning_rate=0.001,
+                batch_size=256,
+                hidden_sizes=(1024, 1024, 1024),
+                buffer_size=500000,
+
+                save=False,
+                save_folder='./data',
+                load=False,
+                load_folder='./data',
+                test_freq=2,
+                test_ratio=0.1,
+                activation="relu",
+            )
+
 
 class Memory:
     def __init__(self):
@@ -269,41 +285,64 @@ def main():
 
     ###########Initial Buffer Fill##############################
     print ("###########Initial Buffer Fill##############################")
-    dynamics_model = RegressionModel(state_dim + action_dim, state_dim)  # .to(device)
-    reward_model = rewardModel(state_dim)  # .to(device)
-    cost_model = costModel(state_dim)  # .to(device)
-    pretrain_eps = 10
+    load = False
+    path = './data/'
+    pretrain_eps = 10000
     Horizon = 500
     gamma_cost = 0.99
     gamma_rew = 0.99
+    dynamics_model = RegressionModel(state_dim + action_dim, state_dim, config=DEFAULT_CONFIG)  # .to(device)
+    reward_model = rewardModel(state_dim, config=DEFAULT_CONFIG)  # .to(device)
+    cost_model = costModel(state_dim, config=DEFAULT_CONFIG)  # .to(device)
+    if not load:
+        fill_buffer(env, dynamics_model, cost_model, reward_model, random_flag=True, ppo=None, Horizon=Horizon,
+                    num_episodes=pretrain_eps)
+        # SAVE DATA ###############################
+        dynamics_model.save_data()
+        cost_model.save_data()
+        reward_model.save_data()
+    else:
+        # LOAD DATA ################################
+        dynamics_model.load_data(path)
+        cost_model.load_data(path)
+        reward_model.load_data(path)
 
-    fill_buffer(env, dynamics_model, cost_model, reward_model, random_flag=True, ppo=None, Horizon=Horizon,
-                num_episodes=pretrain_eps)
 
     ##############Model Pre-Training Loop#######################
     print ("#############Model Pre-Training Loop#################")
     # optimizer_dynamics =  optim.Adam(dynamics_model.parameters(),lr=0.01)
     optimizer_reward = optim.Adam(reward_model.parameters(), lr=0.01)
     optimizer_cost = optim.Adam(cost_model.parameters(), lr=0.01)
-    epochs = 5  # change this when running
+    epochs = 2  # change this when running
 
-    dynamics_model.fit(epochs=epochs)
-    cost_model.fit(epochs=epochs, optimizer=optimizer_cost)
-    reward_model.fit(epochs=epochs, optimizer=optimizer_reward)
+    if not load:
+        dynamics_model.fit(epochs=epochs)
+        cost_model.fit(epochs=epochs, optimizer=optimizer_cost)
+        reward_model.fit(epochs=epochs, optimizer=optimizer_reward)
+
+        #SAVE MODEL ##################################################
+        dynamics_model.save_model(path+'/model_dynamics.pkl')
+        cost_model.save_model(path+'/model_cost.pkl')
+        reward_model.save_model(path+'/model_reward.pkl')
+    else:
+        #LOAD MODEL ###############################################
+        dynamics_model.load_model(path+'/model_dynamics.pkl')
+        cost_model.load_model(path+'/model_cost.pkl')
+        reward_model.load_model(path+'/model_reward.pkl')
 
     ####################### Main Loop ###########################
     print ("####################### Main Loop ###########################")
     memory = Memory()
     ppo = PPO(state_dim, action_dim, action_std, lr, betas, gamma, K_epochs, eps_clip, gamma_cost, gamma_rew)
-    epochs = 5
-    fill_buffer_eps = 10
-    kappa = 1  # initially high to be more conservative
+    epochs = 10
+    fill_buffer_eps = 100
+    kappa = 10  # initially high to be more conservative
     alpha = 0.1  # learning rate for kappa
     C = 10
-    eval_freq = 1
+    eval_freq = 10
     eval_traj_num = 5
     save_every = 100
-    max_episodes = 10  # max training episodes
+    max_episodes = 10000  # max training episodes
 
     eval_cost = []
     eval_rew = []
@@ -324,6 +363,7 @@ def main():
 
         fill_buffer(env, dynamics_model, cost_model, reward_model, random_flag=False, ppo=ppo, Horizon=Horizon,
                     num_episodes=fill_buffer_eps)
+
         _, _, _, _, Jc = ppo.rollout(env.observation_space.sample(), dynamics_model, cost_model, reward_model, Horizon)
 
         print ("Fill Buffer with updated policy complete")
@@ -355,18 +395,21 @@ def main():
 
     plt.figure()
     plt.plot(np.arange(len(eval_rew)), eval_rew, label='eval rewards')
+    plt.title("eval reward")
     plt.savefig('eval_rewards.png')
-    plt.show()
+    # plt.show()
 
     plt.figure()
     plt.plot(np.arange(len(eval_cost)), eval_cost, label='eval costs')
+    plt.title("eval cost")
     plt.savefig('eval_cost.png')
-    plt.show()
+    # plt.show()
 
     plt.figure()
     plt.plot(np.arange(len(kappa_list)), kappa_list, label='kappa')
+    plt.title("kappa plot")
     plt.savefig('kappa_plot.png')
-    plt.show()
+    # plt.show()
 
     print ("##########################Complete!##################################")
     ################################################################################

@@ -1,26 +1,15 @@
+import os
+
 import torch
 import torch.nn as nn
+import os.path as osp
 from safe_rl.mbrl.models.base import MLPRegression, MLPCategorical, CUDA, CPU, combined_shape, DataBuffer
 from torch.utils.data import TensorDataset, DataLoader, random_split
 
-DEFAULT_CONFIG = dict(
-                n_epochs=100,
-                learning_rate=0.001,
-                batch_size=256,
-                hidden_sizes=(1024, 1024, 1024),
-                buffer_size=500000,
 
-                save=False,
-                save_folder=None,
-                load=False,
-                load_folder=None,
-                test_freq=2,
-                test_ratio=0.1,
-                activation="relu",
-            )
 
 class costModel(nn.Module):
-    def __init__(self,state_dim,config=DEFAULT_CONFIG) -> None:
+    def __init__(self,state_dim,config=None) -> None:
         super().__init__()
         self.state_dim  = state_dim
         self.network = nn.Sequential(
@@ -32,7 +21,6 @@ class costModel(nn.Module):
                 )
         self.epochs = 100
         self.data_buf = DataBuffer(self.state_dim,1, max_len=500000)
-        self.save = True
         # self.env=env
         self.eps = 1e-3
         self.n_epochs = config["n_epochs"]
@@ -43,6 +31,18 @@ class costModel(nn.Module):
         self.test_ratio = config["test_ratio"]
         activ = config["activation"]
         self.criterion = nn.MSELoss(reduction='mean')
+
+        self.save = config["save"]
+        if self.save:
+            self.folder = config["save_folder"]
+            if osp.exists(self.folder):
+                print("Warning: Saving dir %s already exists! Storing model and buffer there anyway." % self.folder)
+            else:
+                os.makedirs(self.folder)
+            self.data_buf_path = osp.join(self.folder, "cost_data_buf.pkl")
+            # self.model_path = osp.join(self.folder, "cost_model.pkl")
+            # self.save_freq = config["save_freq"]
+            # self.save_path = config["save_path"]
         
         
     def forward(self,x):
@@ -190,6 +190,41 @@ class costModel(nn.Module):
         labels = torch.tensor(label).float()
         loss = self.criterion(pred, labels)
         return loss.item()
+
+    ###########SAVE DATA#################################################
+    def save_model(self, path):
+        checkpoint = {"model_state_dict":  self.network.state_dict()}
+        torch.save(checkpoint, path)
+
+    def save_data(self):
+        # self.save_model(self.model_path)
+        self.data_buf.save(self.data_buf_path)
+        print("Successfully save model and data buffer to %s"%self.folder)
+
+    #########LOAD DATA######################################################
+    def load_model(self, path):
+        checkpoint = torch.load(path)
+        self.model = checkpoint["model_state_dict"]
+        # self.model = CUDA(self.model)
+        # self.optimizer = torch.optim.Adam(self.model.parameters(), lr=self.lr)
+        # self.mu = checkpoint["mu"]
+        # self.sigma = checkpoint["sigma"]
+        # self.label_mu = checkpoint["label_mu"]
+        # self.label_sigma = checkpoint["label_sigma"]
+
+    def load_data(self, path):
+        # model_path = osp.join(path, "dynamic_model.pkl")
+        # if osp.exists(model_path):
+        #     self.load_model(model_path)
+        #     print("Loading dynamic model from %s ."%model_path)
+        # else:
+        #     print("We can not find the model from %s"%model_path)
+        data_buf_path = osp.join(path, "cost_data_buf.pkl")
+        if osp.exists(data_buf_path):
+            print("Loading dynamic data buffer from %s ."%data_buf_path)
+            self.data_buf.load(data_buf_path)
+        else:
+            print("We can not find the dynamic data buffer from %s"%data_buf_path)
     
     def predict(self, data):
         '''
@@ -209,7 +244,7 @@ class costModel(nn.Module):
         return out
         
 class rewardModel(nn.Module):
-    def __init__(self,state_dim,config=DEFAULT_CONFIG) -> None:
+    def __init__(self,state_dim,config=None) -> None:
         super().__init__()
         self.state_dim  = state_dim
         self.network = nn.Sequential(
@@ -220,7 +255,6 @@ class rewardModel(nn.Module):
                 nn.Linear(32, 1)
                 )
         self.data_buf = DataBuffer(self.state_dim,1, max_len=500000)
-        self.save = True
         self.eps = 1e-3
         self.n_epochs = config["n_epochs"]
         self.lr = config["learning_rate"]
@@ -230,6 +264,17 @@ class rewardModel(nn.Module):
         self.test_ratio = config["test_ratio"]
         activ = config["activation"]
         self.criterion = nn.MSELoss(reduction='mean')
+        self.save = config["save"]
+        if self.save:
+            self.folder = config["save_folder"]
+            if osp.exists(self.folder):
+                print("Warning: Saving dir %s already exists! Storing model and buffer there anyway." % self.folder)
+            else:
+                os.makedirs(self.folder)
+            self.data_buf_path = osp.join(self.folder, "reward_data_buf.pkl")
+            self.model_path = osp.join(self.folder, "reward_model.pkl")
+            # self.save_freq = config["save_freq"]
+            # self.save_path = config["save_path"]
         
         
         
@@ -373,6 +418,41 @@ class rewardModel(nn.Module):
         labels = torch.tensor(label).float()
         loss = self.criterion(pred, labels)
         return loss.item()
+
+    ###########SAVE DATA#################################################
+    def save_model(self, path):
+        checkpoint = {"model_state_dict": self.network.state_dict()}
+        torch.save(checkpoint, path)
+
+    def save_data(self):
+        # self.save_model(self.model_path)
+        self.data_buf.save(self.data_buf_path)
+        print("Successfully save model and data buffer to %s"%self.folder)
+
+    #########LOAD DATA######################################################
+    def load_model(self, path):
+        checkpoint = torch.load(path)
+        self.model = checkpoint["model_state_dict"]
+        # self.model = CUDA(self.model)
+        # self.optimizer = torch.optim.Adam(self.model.parameters(), lr=self.lr)
+        # self.mu = checkpoint["mu"]
+        # self.sigma = checkpoint["sigma"]
+        # self.label_mu = checkpoint["label_mu"]
+        # self.label_sigma = checkpoint["label_sigma"]
+
+    def load_data(self, path):
+        # model_path = osp.join(path, "dynamic_model.pkl")
+        # if osp.exists(model_path):
+        #     self.load_model(model_path)
+        #     print("Loading dynamic model from %s ."%model_path)
+        # else:
+        #     print("We can not find the model from %s"%model_path)
+        data_buf_path = osp.join(path, "reward_data_buf.pkl")
+        if osp.exists(data_buf_path):
+            print("Loading dynamic data buffer from %s ."%data_buf_path)
+            self.data_buf.load(data_buf_path)
+        else:
+            print("We can not find the dynamic data buffer from %s"%data_buf_path)
     
     def predict(self, data):
         '''
