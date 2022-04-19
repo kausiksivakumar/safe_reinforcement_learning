@@ -129,11 +129,11 @@ class RegressionModel:
             self.sigma[self.sigma<self.eps] = 1
             self.label_sigma[self.label_sigma<self.eps] = 1
 
-            print("data normalized")
-            print("mu: ", self.mu)
-            print("sigma: ", self.sigma)
-            print("label mu: ", self.label_mu)
-            print("label sigma: ", self.label_sigma)
+            # print("data normalized")
+            # print("mu: ", self.mu)
+            # print("sigma: ", self.sigma)
+            # print("label mu: ", self.label_mu)
+            # print("label sigma: ", self.label_sigma)
 
             tensor_x = (tensor_x-self.mu) / (self.sigma)
             tensor_y = (tensor_y-self.label_mu) / (self.label_sigma)
@@ -168,7 +168,7 @@ class RegressionModel:
             train_loader, test_loader = self.make_dataloader(x, y, normalize = normalize)
         
         for epoch in range(epochs):
-            print ("epoch no: ", epoch)
+            # print ("epoch no: ", epoch)
             self.model.train()
             loss_train = 0
             loss_test = 1e5

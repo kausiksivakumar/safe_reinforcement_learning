@@ -205,13 +205,8 @@ class costModel(nn.Module):
             out = self.model(inputs)
             # out = CPU(out)
             out = out * (self.label_sigma) + self.label_mu
-            out = out.numpy()
+            # out = out.numpy()
         return out
-
-        
-    
-        
-    
         
 class rewardModel(nn.Module):
     def __init__(self,state_dim,config=DEFAULT_CONFIG) -> None:
