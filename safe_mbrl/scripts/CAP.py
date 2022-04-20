@@ -409,28 +409,33 @@ def main():
     plt.title("eval reward")
     plt.savefig('eval_rewards.png')
     # plt.show()
+    plt.close()
 
     plt.figure()
     plt.plot(total_env_interacts, eval_cost, label='eval costs')
     plt.title("eval cost")
     plt.savefig('eval_cost.png')
     # plt.show()
+    plt.close()
 
     plt.figure()
     plt.plot(total_env_interacts, cost_rate, label='cost rate')
     plt.title("cost rate plot")
     plt.savefig('cost_rate_plot.png')
+    plt.close()
 
     plt.figure()
     plt.plot(total_env_interacts, kappa_list, label='kappa')
     plt.title("kappa plot")
     plt.savefig('kappa_plot.png')
+    plt.close()
     # plt.show()
 
     plt.figure()
     plt.plot(total_env_interacts, eval_eplen, label='eplen')
     plt.title("Episode length plot")
     plt.savefig('eplen_plot.png')
+    plt.close()
 
 
     out = np.array([np.arange(max_episodes), eval_rew, eval_cost, eval_eplen, cost_rate, total_env_interacts]).T
