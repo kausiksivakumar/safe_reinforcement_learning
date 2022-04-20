@@ -211,6 +211,7 @@ class PPO:
             # take gradient step
             self.optimizer.zero_grad()
             loss.mean().backward()
+            torch.nn.utils.clip_grad_norm_(self.policy.parameters(), 1.0000)
             self.optimizer.step()
 
         # Copy new weights into old policy:
@@ -268,8 +269,8 @@ def main():
 
     ###########Initial Buffer Fill##############################
     print ("###########Initial Buffer Fill##############################")
-    load_data = False
-    load_model = False
+    load_data = True
+    load_model = True
     path = './data/'
     pretrain_eps = 10000
     Horizon = 500
@@ -321,7 +322,7 @@ def main():
     # Set Hyperparams
     lr = 0.003   # for policy gradient
     epochs = 10  # CAP epochs for model fitting
-    fill_buffer_eps = 100  # no of ep for fill buffer with updated policy
+    fill_buffer_eps = 2#100  # no of ep for fill buffer with updated policy
     kappa = 10  # initially high to be more conservative
     alpha = 0.1  # learning rate for kappa
     k_epochs = 5
@@ -329,7 +330,7 @@ def main():
     I = 1  # No of iterations to avergae out for one polcy gradient step
     N = 64 # No of trajectories per I
     E = 50 # Elite set size
-    max_episodes = 10000  # max training episodes
+    max_episodes = 1000#0  # max training episodes
     action_std = 0.5  # constant std for action distribution (Multivariate Normal)
     betas = (0.9, 0.999)
 
