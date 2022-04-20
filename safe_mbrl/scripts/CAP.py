@@ -322,7 +322,7 @@ def main():
     # Set Hyperparams
     lr = 0.003   # for policy gradient
     epochs = 10  # CAP epochs for model fitting
-    fill_buffer_eps = 2#100  # no of ep for fill buffer with updated policy
+    fill_buffer_eps = 100  # no of ep for fill buffer with updated policy
     kappa = 10  # initially high to be more conservative
     alpha = 0.1  # learning rate for kappa
     k_epochs = 5
