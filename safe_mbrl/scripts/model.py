@@ -41,7 +41,7 @@ class RegressionModel:
         if self.save:
             self.folder = config["save_folder"]
             if osp.exists(self.folder):
-                print("Warning: Saving dir %s already exists! Storing model and buffer there anyway."%self.folder)
+                print("Warning: dir %s already exists!"%self.folder)
             else:
                 os.makedirs(self.folder)
             self.data_buf_path = osp.join(self.folder, "dynamic_data_buf.pkl")

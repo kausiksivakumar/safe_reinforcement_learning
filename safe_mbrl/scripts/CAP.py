@@ -154,7 +154,7 @@ class PPO:
             loglist = torch.zeros((N, H))
             for traj in range(N):
                 curr_state, logp_list, actions_raw, exp_reward, exp_cost = self.rollout(initial_state, dynamics_model,
-                                                                                        cost_model, reward_model)
+                                                                                        cost_model, reward_model, H=H)
                 if (exp_cost <= C):
                     feasible_set_idx.append(traj)
                 cost_traj[traj] = exp_cost
@@ -185,7 +185,7 @@ class PPO:
         obj /= I
         return (obj)
 
-    def update(self, env, memory, dynamics_model, cost_model, reward_model, K_epochs = 5, I =1, N =50,C=10,E=50, H= 30):
+    def update(self, env, memory, dynamics_model, cost_model, reward_model, K_epochs = 5, I =1, N =50,C=10,E=50, H=30):
         # Monte Carlo estimate of rewards:
         '''
         rewards = []
@@ -325,7 +325,7 @@ def main():
     kappa = 10  # initially high to be more conservative
     alpha = 0.1  # learning rate for kappa
     k_epochs = 5
-    C = 10 # Cost threshold
+    C = 0.2 # Cost threshold
     I = 1  # No of iterations to avergae out for one polcy gradient step
     N = 64 # No of trajectories per I
     E = 50 # Elite set size
@@ -355,14 +355,14 @@ def main():
 
         print ("Dynamics model fit complete")
 
-        ppo.update(env, memory, dynamics_model, cost_model, reward_model,K_epochs = k_epochs, I =I,N =N,C=C,E=E, H= Horizon )
+        ppo.update(env, memory, dynamics_model, cost_model, reward_model,K_epochs = k_epochs, I =I, N =N,C=C, E=E, H=Horizon)
 
         print ("Policy Gradient update complete")
 
         fill_buffer(env, dynamics_model, cost_model, reward_model, random_flag=False, ppo=ppo, Horizon=Horizon,
                     num_episodes=fill_buffer_eps)
 
-        _, _, _, _, Jc = ppo.rollout(env.observation_space.sample(), dynamics_model, cost_model, reward_model, Horizon)
+        _, _, _, _, Jc = ppo.rollout(env.observation_space.sample(), dynamics_model, cost_model, reward_model, H=Horizon)
 
         print ("Fill Buffer with updated policy complete")
 
@@ -388,7 +388,7 @@ def main():
             eval_cost.append(avg_cum_cost)
             cost_rate.append(avg_cum_cost/(i_episode*avg_eplen))
             eval_eplen.append(avg_eplen)
-            print('Eval: Episode {} \t Avg Cost {} \t Avg Reward: {}'.format(i_episode, avg_cost, avg_reward))
+            # print('Eval: Episode {} \t Avg Cost {} \t Avg Reward: {}'.format(i_episode, avg_cum_cost, avg_reward))
 
         # save every 500 episodes
         if i_episode % save_every == 0:
@@ -435,7 +435,6 @@ def main():
 
     out = np.array([np.arange(max_episodes), eval_rew, eval_cost, eval_eplen, cost_rate, total_env_interacts]).T
     np.savetxt("stats.txt", out, delimiter=" ", fmt='%10.5f', header="Epoch AverageEpRet  AverageEpCost EpLen CostRate TotalEnvInteracts")
-
 
     print ("##########################Complete!##################################")
     ################################################################################
