@@ -9,6 +9,7 @@ from scripts.model import RegressionModel
 from scripts.constraint_model import costModel, rewardModel
 import tqdm
 import torch.optim as optim
+from env_utils import SafetyGymEnv
 
 # device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 device = torch.device("cpu")
@@ -28,6 +29,30 @@ DEFAULT_CONFIG = dict(
                 activation="relu",
             )
 
+DEFAULT_COST_CONFIG = dict(
+    model_param=dict(
+                boosting_type='gbdt',
+                num_leaves=12,
+                max_depth=8,
+                learning_rate=0.1,
+                n_estimators=800,
+                ),
+    safe_buffer_size=10000,
+    unsafe_buffer_size=50000,
+    batch=1000,
+    max_ratio=2.5,
+    save=True,
+    save_folder="../data/cost_model_pg1",
+    load=False,
+    load_folder="../data/cost_model_pg1",
+    )
+
+DEFAULT_ENV_CONFIG_POINT = dict(
+    action_repeat=3,
+    max_episode_length=300,
+    use_dist_reward=False,
+    stack_obs=False,
+)
 
 class Memory:
     def __init__(self):
@@ -143,7 +168,7 @@ class PPO:
 
         return curr_state, logp_list, actions_raw, exp_reward, exp_cost
 
-    def CCEM(self, env, policy, dynamics_model, cost_model, reward_model, I, N, C=10, E=50, H=30):
+    def CCEM(self, env, policy, dynamics_model, cost_model, reward_model, kappa, I, N, C=10, E=50, H=30):
         initial_state = env.observation_space.sample()
         obj = 0
         for i in range(I):
@@ -155,7 +180,7 @@ class PPO:
             for traj in range(N):
                 curr_state, logp_list, actions_raw, exp_reward, exp_cost = self.rollout(initial_state, dynamics_model,
                                                                                         cost_model, reward_model, H=H)
-                if (exp_cost <= C):
+                if exp_cost <= C-kappa:
                     feasible_set_idx.append(traj)
                 cost_traj[traj] = exp_cost
                 reward_traj[traj] = exp_reward
@@ -169,7 +194,7 @@ class PPO:
             # elite_set_idxs                                              =   np.zeros((E,))
             # logp_list                                                   =   np.array(loglist)
 
-            if (len(feasible_set_idx) < E):
+            if len(feasible_set_idx) < E:
                 sorted_idxs = torch.argsort(cost_traj)
                 elite_set_idxs = sorted_idxs[:E]
 
@@ -185,7 +210,7 @@ class PPO:
         obj /= I
         return (obj)
 
-    def update(self, env, memory, dynamics_model, cost_model, reward_model, K_epochs = 5, I =1, N =50,C=10,E=50, H=30):
+    def update(self, env, dynamics_model, cost_model, reward_model,kappa, K_epochs = 5, I =1, N =50,C=10,E=50, H=30):
         # Monte Carlo estimate of rewards:
         '''
         rewards = []
@@ -207,7 +232,7 @@ class PPO:
         '''
         # Optimize policy for K epochs:
         for _ in tqdm.tqdm(range(K_epochs)):
-            loss = self.CCEM(env, self.policy, dynamics_model, cost_model, reward_model, I=I, N=N, C=C, E=E, H=H)
+            loss = self.CCEM(env, self.policy, dynamics_model, cost_model, reward_model, kappa=kappa, I=I, N=N, C=C, E=E, H=H)
             # take gradient step
             self.optimizer.zero_grad()
             loss.mean().backward()
@@ -256,8 +281,13 @@ def main():
     #############################################
 
     # creating environment
-    env = gym.make(env_name)
-    env_test = gym.make(env_name)
+
+    env_tr = SafetyGymEnv(robot="Point", task="goal", level=1, seed=1, config=DEFAULT_ENV_CONFIG_POINT)
+    env = env_tr.env
+
+    env_te = SafetyGymEnv(robot="Point", task="goal", level=1, seed=1, config=DEFAULT_ENV_CONFIG_POINT)
+    env_test = env_te.env
+
     state_dim = env.observation_space.shape[0]
     action_dim = env.action_space.shape[0]
 
@@ -269,17 +299,17 @@ def main():
 
     ###########Initial Buffer Fill##############################
     print ("###########Initial Buffer Fill##############################")
-    load_data = True
-    load_model = True
+    load_data = False
+    load_model = False
     path = './data/'
-    pretrain_eps = 10000
-    Horizon = 500
+    pretrain_eps = 10
+    Horizon = 5
     gamma_cost = 0.99
     gamma_rew = 0.99
 
     dynamics_model = RegressionModel(state_dim + action_dim, state_dim, config=DEFAULT_CONFIG)  # .to(device)
     reward_model = rewardModel(state_dim, config=DEFAULT_CONFIG)  # .to(device)
-    cost_model = costModel(state_dim, config=DEFAULT_CONFIG)  # .to(device)
+    cost_model = costModel(env_tr, config=DEFAULT_COST_CONFIG)  # .to(device)
     if not load_data:
         fill_buffer(env, dynamics_model, cost_model, reward_model, random_flag=True, ppo=None, Horizon=Horizon,
                     num_episodes=pretrain_eps)
@@ -299,7 +329,7 @@ def main():
     # optimizer_dynamics =  optim.Adam(dynamics_model.parameters(),lr=0.01)
     optimizer_reward = optim.Adam(reward_model.parameters(), lr=0.01)
     optimizer_cost = optim.Adam(cost_model.parameters(), lr=0.01)
-    epochs = 1000  # change this when running
+    epochs = 2  # change this when running
 
     if not load_model:
         dynamics_model.fit(epochs=epochs)
@@ -356,7 +386,7 @@ def main():
 
         print ("Dynamics model fit complete")
 
-        ppo.update(env, memory, dynamics_model, cost_model, reward_model,K_epochs = k_epochs, I =I, N =N,C=C, E=E, H=Horizon)
+        ppo.update(env, dynamics_model, cost_model, reward_model, kappa=kappa, K_epochs = k_epochs, I =I, N =N,C=C, E=E, H=Horizon)
 
         print ("Policy Gradient update complete")
 

@@ -30,7 +30,7 @@ def combined_shape(length, shape=None):
 class DataBuffer:
     # numpy-based ring buffer to store data
 
-    def __init__(self, input_dim, output_dim, max_len=5000000):
+    def __init__(self, input_dim, output_dim=None, max_len=5000000):
         self.input_buf = np.zeros(combined_shape(max_len, input_dim), dtype=np.float32)
         self.output_buf = np.zeros(combined_shape(max_len, output_dim), dtype=np.float32)
         self.ptr, self.max_size = 0, max_len
