@@ -32,20 +32,18 @@ class costModel:
 
         self.model = self.load_data(config["load_folder"]) if config["load"] else None
         if self.model is None:
-            self.model = lgb.LGBMClaenvssifier(**config["model_param"])
+            self.model = lgb.LGBMClassifier(**config["model_param"])
         else:
             self.model.set_params(**config["model_param"])
 
-        self.save = config["save"]
-        if self.save:
-            self.folder = config["save_folder"]
-            if osp.exists(self.folder):
-                print("Warning: Saving dir %s already exists! Storing model and buffer there anyway." % self.folder)
-            else:
-                os.makedirs(self.folder)
-            self.safe_data_buf_path = osp.join(self.folder, "safe_data_buf.pkl")
-            self.unsafe_data_buf_path = osp.join(self.folder, "unsafe_data_buf.pkl")
-            self.model_path = osp.join(self.folder, "cost_model.pkl")
+        self.folder = config["save_folder"]
+        if osp.exists(self.folder):
+            print("Warning: Saving dir %s already exists! Storing model and buffer there anyway." % self.folder)
+        else:
+            os.makedirs(self.folder)
+        self.safe_data_buf_path = osp.join(self.folder, "safe_data_buf.pkl")
+        self.unsafe_data_buf_path = osp.join(self.folder, "unsafe_data_buf.pkl")
+        self.model_path = osp.join(self.folder, "cost_model.pkl")
 
     def add_data_point(self, state, cost):
         '''
@@ -117,13 +115,16 @@ class costModel:
             X, Y = x, y
         self.model.fit(X, Y)
         if use_data_buf:
-            y_pred = self.model.predict(x0)
-            acc0 = np.equal(y0, y_pred)
-            y_pred = self.model.predict(x1)
-            acc1 = np.equal(y1, y_pred)
-            print("unsafe data accuracy: %.2f%%, safe data accuracy: %.2f%%" % (100 * acc1.mean(), 100 * acc0.mean()))
-        if self.save:
-            self.save_data()
+            if x0.shape[0] != 0:
+                y_pred = self.model.predict(x0)
+                acc0 = np.equal(y0, y_pred)
+                print("safe data accuracy: %.2f%%" % (100 * acc0.mean()))
+            if x1.shape[0] != 0:
+                y_pred = self.model.predict(x1)
+                acc1 = np.equal(y1, y_pred)
+                print("unsafe data accuracy: %.2f%%" % (100 * acc1.mean()))
+        # if self.save:
+        #     self.save_data()
 
     def transform(self, x):
         '''
@@ -232,39 +233,42 @@ class costModel:
         return loss.item()
 
     ###########SAVE DATA#################################################
-    def save_model(self, path):
-        checkpoint = {"model_state_dict":  self.network.state_dict()}
-        torch.save(checkpoint, path)
+    def save_model(self):
+        joblib.dump(self.model, self.model_path)
+        # checkpoint = {"model_state_dict":  self.model.state_dict()}
+        # torch.save(checkpoint, path)
 
     def save_data(self):
         # self.save_model(self.model_path)
-        self.data_buf.save(self.data_buf_path)
+        self.safe_data_buf.save(self.safe_data_buf_path)
+        self.unsafe_data_buf.save(self.unsafe_data_buf_path)
         print("Successfully save model and data buffer to %s"%self.folder)
 
     #########LOAD DATA######################################################
-    def load_model(self, path):
-        checkpoint = torch.load(path)
-        self.model = checkpoint["model_state_dict"]
-        # self.model = CUDA(self.model)
-        # self.optimizer = torch.optim.Adam(self.model.parameters(), lr=self.lr)
-        # self.mu = checkpoint["mu"]
-        # self.sigma = checkpoint["sigma"]
-        # self.label_mu = checkpoint["label_mu"]
-        # self.label_sigma = checkpoint["label_sigma"]
-
-    def load_data(self, path):
-        # model_path = osp.join(path, "dynamic_model.pkl")
-        # if osp.exists(model_path):
-        #     self.load_model(model_path)
-        #     print("Loading dynamic model from %s ."%model_path)
-        # else:
-        #     print("We can not find the model from %s"%model_path)
-        data_buf_path = osp.join(path, "cost_data_buf.pkl")
-        if osp.exists(data_buf_path):
-            print("Loading dynamic data buffer from %s ."%data_buf_path)
-            self.data_buf.load(data_buf_path)
+    def load_model(self):
+        # checkpoint = torch.load(path)
+        # self.model = checkpoint["model_state_dict"]
+        # model_path = osp.join(self.model_path, "cost_model.pkl")
+        if osp.exists(self.model_path):
+            self.model = joblib.load(self.model_path)
+            print(colorize("Loading model from %s ." % self.model_path, 'magenta', bold=True))
         else:
-            print("We can not find the dynamic data buffer from %s"%data_buf_path)
+            self.model = None
+            print(colorize("We can not find the model from %s" % self.model_path, 'red', bold=True))
+        # return model
+
+    def load_data(self):
+        if osp.exists(self.safe_data_buf_path):
+            print("Loading dynamic data buffer from %s ."%self.safe_data_buf_path)
+            self.safe_data_buf.load(self.safe_data_buf_path)
+        else:
+            print("We can not find the dynamic data buffer from %s"%self.safe_data_buf_path)
+
+        if osp.exists(self.unsafe_data_buf_path):
+            print("Loading dynamic data buffer from %s ."%self.unsafe_data_buf_path)
+            self.unsafe_data_buf.load(self.unsafe_data_buf_path)
+        else:
+            print("We can not find the dynamic data buffer from %s"%self.unsafe_data_buf_path)
         
 class rewardModel(nn.Module):
     def __init__(self,state_dim,config=None) -> None:
@@ -296,14 +300,11 @@ class rewardModel(nn.Module):
                 os.makedirs(self.folder)
             self.data_buf_path = osp.join(self.folder, "reward_data_buf.pkl")
             self.model_path = osp.join(self.folder, "reward_model.pkl")
-            # self.save_freq = config["save_freq"]
-            # self.save_path = config["save_path"]
         
         
         
     def forward(self,x):
         reward = self.network(x)
-        
         return(reward)
     
     def add_data_point(self,state,reward):

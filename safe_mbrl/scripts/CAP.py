@@ -9,7 +9,7 @@ from scripts.model import RegressionModel
 from scripts.constraint_model import costModel, rewardModel
 import tqdm
 import torch.optim as optim
-from env_utils import SafetyGymEnv
+from scripts.env_utils import SafetyGymEnv
 
 # device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 device = torch.device("cpu")
@@ -46,6 +46,24 @@ DEFAULT_COST_CONFIG = dict(
     load=False,
     load_folder="../data/cost_model_pg1",
     )
+
+# DEFAULT_REWARD_CONFIG = dict(
+#     model_param=dict(
+#                 boosting_type='gbdt',
+#                 num_leaves=12,
+#                 max_depth=8,
+#                 learning_rate=0.1,
+#                 n_estimators=800,
+#                 ),
+#     safe_buffer_size=10000,
+#     unsafe_buffer_size=50000,
+#     batch=1000,
+#     max_ratio=2.5,
+#     save=True,
+#     save_folder="../data/reward_model_pg1",
+#     load=False,
+#     load_folder="../data/reward_model_pg1",
+#     )
 
 DEFAULT_ENV_CONFIG_POINT = dict(
     action_repeat=3,
@@ -168,8 +186,8 @@ class PPO:
 
         return curr_state, logp_list, actions_raw, exp_reward, exp_cost
 
-    def CCEM(self, env, policy, dynamics_model, cost_model, reward_model, kappa, I, N, C=10, E=50, H=30):
-        initial_state = env.observation_space.sample()
+    def CCEM(self, env, dynamics_model, cost_model, reward_model, kappa, I, N, C=10.0, E=50, H=30):
+        initial_state = env.reset()
         obj = 0
         for i in range(I):
             cost_traj = torch.zeros((N))
@@ -210,7 +228,7 @@ class PPO:
         obj /= I
         return (obj)
 
-    def update(self, env, dynamics_model, cost_model, reward_model,kappa, K_epochs = 5, I =1, N =50,C=10,E=50, H=30):
+    def update(self, env, dynamics_model, cost_model, reward_model,kappa, K_epochs = 5, I =1, N =50,C=10.0,E=50, H=30):
         # Monte Carlo estimate of rewards:
         '''
         rewards = []
@@ -232,10 +250,11 @@ class PPO:
         '''
         # Optimize policy for K epochs:
         for _ in tqdm.tqdm(range(K_epochs)):
-            loss = self.CCEM(env, self.policy, dynamics_model, cost_model, reward_model, kappa=kappa, I=I, N=N, C=C, E=E, H=H)
+            loss = self.CCEM(env, dynamics_model, cost_model, reward_model, kappa=kappa, I=I, N=N, C=C, E=E, H=H)
             # take gradient step
             self.optimizer.zero_grad()
             loss.mean().backward()
+            # loss.backward()
             torch.nn.utils.clip_grad_norm_(self.policy.parameters(), 1.0000)
             self.optimizer.step()
 
@@ -250,20 +269,22 @@ def generate_action(env, random_flag, state=None, ppo_object=None):
         return ppo_object.policy.act(torch.Tensor(state)).detach().numpy()
 
 
-def fill_buffer(env, dynamics_model, cost_model, reward_model, random_flag=False, ppo=None, Horizon=500,
+def fill_buffer(env_tr, dynamics_model, cost_model, reward_model, random_flag=False, ppo=None, Horizon=500,
                 num_episodes=10):
     data_num = 0
     for epi in tqdm.tqdm(range(num_episodes)):
-        obs = env.reset()
+        obs = env_tr.reset()
         done = False
         i = 0
         while not done and i < Horizon:
-            action = generate_action(env, random_flag, obs, ppo)
-            obs_next, reward, done, info = env.step(action)
+            action = generate_action(env_tr, random_flag, obs, ppo)
+            # obs_next, reward, done, info = env.step(action)
+            obs_next, reward, done, info = env_tr.step(action)
             if not done:  # otherwise the goal position will change
                 x, y = np.concatenate((obs, action)), obs_next
                 dynamics_model.add_data_point(x, y)
                 cost = info["cost"]
+                # print ("cost: ", cost, "reward: ", reward, "obs: ", obs)
                 reward_model.add_data_point(obs_next, reward)
                 cost_model.add_data_point(obs_next, cost)
                 data_num += 1
@@ -288,8 +309,8 @@ def main():
     env_te = SafetyGymEnv(robot="Point", task="goal", level=1, seed=1, config=DEFAULT_ENV_CONFIG_POINT)
     env_test = env_te.env
 
-    state_dim = env.observation_space.shape[0]
-    action_dim = env.action_space.shape[0]
+    state_dim = env_tr.observation_size
+    action_dim = env_tr.action_size
 
     if random_seed:
         print("Random Seed: {}".format(random_seed))
@@ -299,51 +320,53 @@ def main():
 
     ###########Initial Buffer Fill##############################
     print ("###########Initial Buffer Fill##############################")
-    load_data = False
-    load_model = False
+    load_data = True
+    load_model = True
     path = './data/'
-    pretrain_eps = 10
-    Horizon = 5
+    pretrain_eps = 1000
+    Horizon = 50
     gamma_cost = 0.99
     gamma_rew = 0.99
 
     dynamics_model = RegressionModel(state_dim + action_dim, state_dim, config=DEFAULT_CONFIG)  # .to(device)
-    reward_model = rewardModel(state_dim, config=DEFAULT_CONFIG)  # .to(device)
     cost_model = costModel(env_tr, config=DEFAULT_COST_CONFIG)  # .to(device)
+    reward_model = rewardModel(state_dim, config=DEFAULT_CONFIG)  # .to(device)
     if not load_data:
-        fill_buffer(env, dynamics_model, cost_model, reward_model, random_flag=True, ppo=None, Horizon=Horizon,
+        fill_buffer(env_tr, dynamics_model, cost_model, reward_model, random_flag=True, ppo=None, Horizon=Horizon,
                     num_episodes=pretrain_eps)
         # SAVE DATA ###############################
         dynamics_model.save_data()
-        cost_model.save_data()
         reward_model.save_data()
+        cost_model.save_data()
     else:
         # LOAD DATA ################################
         dynamics_model.load_data(path)
-        cost_model.load_data(path)
         reward_model.load_data(path)
+        cost_model.load_data()
 
 
     ##############Model Pre-Training Loop#######################
     print ("#############Model Pre-Training Loop#################")
     # optimizer_dynamics =  optim.Adam(dynamics_model.parameters(),lr=0.01)
-    optimizer_reward = optim.Adam(reward_model.parameters(), lr=0.01)
-    optimizer_cost = optim.Adam(cost_model.parameters(), lr=0.01)
+    optimizer_reward = optim.Adam(reward_model.network.parameters(), lr=0.01)
+    # optimizer_cost = optim.Adam(cost_model.model.parameters(), lr=0.01)
     epochs = 2  # change this when running
 
     if not load_model:
         dynamics_model.fit(epochs=epochs)
-        cost_model.fit(epochs=epochs, optimizer=optimizer_cost)
-        reward_model.fit(epochs=epochs, optimizer=optimizer_reward)
+        # cost_model.fit(epochs=epochs, optimizer=optimizer_cost)
+        # reward_model.fit(epochs=epochs, optimizer=optimizer_reward)
+        cost_model.fit(use_data_buf=True)
+        reward_model.fit(epochs=epochs, optimizer=optimizer_reward, use_data_buf=True)
 
         #SAVE MODEL ##################################################
         dynamics_model.save_model(path+'/model_dynamics.pkl')
-        cost_model.save_model(path+'/model_cost.pkl')
+        cost_model.save_model()
         reward_model.save_model(path+'/model_reward.pkl')
     else:
         #LOAD MODEL ###############################################
         dynamics_model.load_model(path+'/model_dynamics.pkl')
-        cost_model.load_model(path+'/model_cost.pkl')
+        cost_model.load_model()
         reward_model.load_model(path+'/model_reward.pkl')
 
     ####################### Main Loop ###########################
@@ -374,23 +397,23 @@ def main():
     cost_rate = []
     eval_eplen = []
 
-    memory = Memory()
+    # memory = Memory()
     ppo = PPO(state_dim, action_dim, lr, action_std, betas, gamma_cost, gamma_rew)
 
     for i_episode in tqdm.tqdm(range(1, max_episodes + 1)):
         print("Main loop eps: : ", i_episode)
 
         dynamics_model.fit(epochs=epochs)
-        cost_model.fit(epochs=epochs, optimizer=optimizer_cost)
-        reward_model.fit(epochs=epochs, optimizer=optimizer_reward)
+        cost_model.fit(use_data_buf=True)
+        reward_model.fit(epochs=epochs, optimizer=optimizer_reward, use_data_buf=True)
 
         print ("Dynamics model fit complete")
 
-        ppo.update(env, dynamics_model, cost_model, reward_model, kappa=kappa, K_epochs = k_epochs, I =I, N =N,C=C, E=E, H=Horizon)
+        ppo.update(env_tr, dynamics_model, cost_model, reward_model, kappa=kappa, K_epochs = k_epochs, I =I, N =N, C=C, E=E, H=Horizon)
 
         print ("Policy Gradient update complete")
 
-        fill_buffer(env, dynamics_model, cost_model, reward_model, random_flag=False, ppo=ppo, Horizon=Horizon,
+        fill_buffer(env_tr, dynamics_model, cost_model, reward_model, random_flag=False, ppo=ppo, Horizon=Horizon,
                     num_episodes=fill_buffer_eps)
 
         _, _, _, _, Jc = ppo.rollout(env.observation_space.sample(), dynamics_model, cost_model, reward_model, H=Horizon)
