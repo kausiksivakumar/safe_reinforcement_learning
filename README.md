@@ -53,3 +53,10 @@ python cap-planet/run_cap_planet.py --env Safexp-PointGoal1-v0 --cost-limit 0 --
 2) Install requirements using the `environment.yml` with steps provided as above
 3) Install mujoco200 from https://www.roboti.us/download.html
 ### TODO Add encoding at top of run_cap_planet
+
+# Running on EC2
+1) Attach to session with given pem file (ssh) 
+2) Run `tmux attach-session -t CAP_original` This is where the CAP code is currently running
+3) `ctrl +B` and `D` to detach from the session (this does not mean that the tmux session is stopped)
+4) Use `tmux kill-session -t session_name` to stop the session
+5) ## Sessions running right now `CAP_original` : This is running the CAP-planet code
