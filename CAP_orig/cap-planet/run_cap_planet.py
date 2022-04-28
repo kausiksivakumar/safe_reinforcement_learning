@@ -147,7 +147,7 @@ optimiser = optim.Adam(param_list, lr=0 if args.learning_rate_schedule != 0 else
 action_std = 0.5  # constant std for action distribution (Multivariate Normal)
 betas = (0.9, 0.999)
 policy_lr = 0.001
-policy = PPO(args.state_size, args.action_size, policy_lr, action_std, betas, args.cost_discount, args.discount, args.device)
+policy = PPO(args.state_size, env.action_size, policy_lr, action_std, betas, args.cost_discount, args.discount, args.device)
 #########################################################################################################################################
 
 

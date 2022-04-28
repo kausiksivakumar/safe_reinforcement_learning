@@ -61,10 +61,10 @@ class PPO:
         self.betas = betas
         self.lr = lr
 
-        self.policy = ActorCritic(state_dim, action_dim, action_std).to(device)
+        self.policy = ActorCritic(state_dim, action_dim, action_std, device).to(device)
         self.optimizer = torch.optim.Adam(self.policy.parameters(), lr=lr, betas=betas)
 
-        self.policy_old = ActorCritic(state_dim, action_dim, action_std).to(device)
+        self.policy_old = ActorCritic(state_dim, action_dim, action_std,device).to(device)
         self.policy_old.load_state_dict(self.policy.state_dict())
 
         self.gamma_cost = gamma_cost
@@ -85,7 +85,7 @@ class PPO:
 
         actions_raw = torch.zeros((planning_horizon, 2))
         logp_list = torch.zeros((planning_horizon, 1))
-        belief_list = torch.zeros((planning_horizon, initial_belief.shape))
+        belief_list = torch.zeros((planning_horizon, initial_belief.shape[1]))
         for i in range(planning_horizon):
             a, logp_pi, _, _ = self.policy.evaluate(curr_state)
             # print ("shapes: ", a.shape, curr_state.shape)
