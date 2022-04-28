@@ -52,4 +52,4 @@ python cap-planet/run_cap_planet.py --env Safexp-PointGoal1-v0 --cost-limit 0 --
 1) Modify the setup file (i.e) comment the `mujoco-py==2.0.2.7` requirement since we already have `mujoco-py<2.2,>=2.1`
 2) Install requirements using the `environment.yml` with steps provided as above
 3) Install mujoco200 from https://www.roboti.us/download.html
-4) 
+### TODO Add encoding at top of run_cap_planet
