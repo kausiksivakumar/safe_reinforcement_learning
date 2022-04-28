@@ -191,7 +191,7 @@ if args.test:
       pbar = tqdm(range(args.max_episode_length // args.action_repeat))
       for t in pbar:
         belief, posterior_state, action, observation, reward, cost, done = update_belief_and_act(args, env, planner, transition_model, encoder, belief, posterior_state, action, observation.to(device=args.device), env.action_range[0], env.action_range[1])
-        video_frames.append(make_grid(torch.cat([observation, observation_model(belief, posterior_state).cpu()], dim=3) + 0.5, nrow=5).numpy())  # Decentre
+        # video_frames.append(make_grid(torch.cat([observation, observation_model(belief, posterior_state).cpu()], dim=3) + 0.5, nrow=5).numpy())  # Decentre
         total_reward += reward * args.discount ** (args.action_repeat * (t + 0.5))
         total_cost += cost * args.cost_discount ** (args.action_repeat * (t + 0.5))
         if args.render:
@@ -200,7 +200,7 @@ if args.test:
           pbar.close()
           break
       print("Reward:", total_reward, "Cost:", total_cost)
-      write_video(video_frames, f'test_episode{eps}', 'test_results')  # Lossy compression
+      # write_video(video_frames, f'test_episode{eps}', 'test_results')  # Lossy compression
   env.close()
   quit()
 
