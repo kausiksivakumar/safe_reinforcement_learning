@@ -15,6 +15,7 @@ from memory import ExperienceReplay
 from models import bottle, Encoder, ObservationModel, RewardModel, CostModel, LogisticCostModel, TransitionModel, OneStepEnsemble
 from planner import MPCPlanner
 from utils import lineplot, violinplot, write_video
+from policy_network import PPO
 import pdb
 
 import safety_gym
@@ -141,11 +142,20 @@ encoder = Encoder(args.symbolic_env, int(env.observation_size), int(args.embeddi
 one_step_ensemble = OneStepEnsemble(args.belief_size, env.action_size, args.state_size)
 param_list = list(transition_model.parameters()) + list(observation_model.parameters()) + list(reward_model.parameters()) + list(cost_model.parameters()) + list(encoder.parameters()) + list(one_step_ensemble.parameters())
 optimiser = optim.Adam(param_list, lr=0 if args.learning_rate_schedule != 0 else args.learning_rate, eps=args.adam_epsilon)
+
+#########################################################################################################################################
+action_std = 0.5  # constant std for action distribution (Multivariate Normal)
+betas = (0.9, 0.999)
+policy_lr = 0.001
+policy = PPO(args.state_size, args.action_size, policy_lr, action_std, betas, args.cost_discount, args.discount, args.device)
+#########################################################################################################################################
+
+
 planner = MPCPlanner(env.action_size, args.planning_horizon, args.optimisation_iters, args.candidates, args.top_candidates, transition_model, reward_model, cost_model, one_step_ensemble,
                      env.action_range[0], env.action_range[1],
                      cost_constrained=args.cost_constrained, penalize_uncertainty=args.penalize_uncertainty,
                      cost_limit=args.cost_limit, cost_discount=args.cost_discount, action_repeat=args.action_repeat, max_length=args.max_episode_length,
-                     penalty_kappa=args.penalty_kappa, binary_cost=args.binary_cost).to(device=args.device)
+                     penalty_kappa=args.penalty_kappa, binary_cost=args.binary_cost, policy=policy).to(device=args.device)
 if args.models is not '' and os.path.exists(args.models):
   model_dicts = torch.load(args.models)
   transition_model.load_state_dict(model_dicts['transition_model'])

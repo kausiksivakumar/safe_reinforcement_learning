@@ -14,7 +14,7 @@ class MPCPlanner(torch.nn.Module):
 
     def __init__(self, action_size, planning_horizon, optimisation_iters, candidates, top_candidates, transition_model, reward_model, cost_model, one_step_ensemble,
                  min_action=-inf, max_action=inf, cost_constrained=False, penalize_uncertainty=True,
-                 cost_limit=0, action_repeat=2, max_length=1000, binary_cost=False, cost_discount=0.99, penalty_kappa=0, lr=0.01):
+                 cost_limit=0, action_repeat=2, max_length=1000, binary_cost=False, cost_discount=0.99, penalty_kappa=0, lr=0.01, policy=None):
         super().__init__()
         self.transition_model, self.reward_model, self.cost_model, self.one_step_ensemble = transition_model, reward_model, cost_model, one_step_ensemble
         self.action_size, self.min_action, self.max_action = action_size, min_action, max_action
@@ -28,6 +28,7 @@ class MPCPlanner(torch.nn.Module):
         self.penalty_kappa = torch.tensor([float(penalty_kappa)], requires_grad=True)
         self.kappa_optim = torch.optim.Adam([self.penalty_kappa], lr=lr)
         self._fixed_cost_penalty = 0
+        self.policy = policy
         if self.binary_cost:
             self.uncertainty_multiplier = DEFAULT_UNCERTAINTY_MULTIPLIER_BINARY
         else:
@@ -58,15 +59,33 @@ class MPCPlanner(torch.nn.Module):
         action_mean, action_std_dev = torch.zeros(self.planning_horizon, B, 1, self.action_size, device=belief.device), torch.ones(self.planning_horizon, B, 1, self.action_size, device=belief.device)
         for _ in range(self.optimisation_iters):
             # Evaluate J action sequences from the current belief (over entire sequence at once, batched over particles)
-            actions = (action_mean + action_std_dev * torch.randn(self.planning_horizon, B, self.candidates, self.action_size, device=action_mean.device)).view(self.planning_horizon, B * self.candidates, self.action_size)  # Sample actions (time x (batch x candidates) x actions)
+            returns = torch.zeros(self.candidates)
+            costs = torch.zeros(self.planning_horizon, self.candidates)
+            actions = torch.zeros((self.planning_horizon, self.candidates, self.action_size))
+            logplist = torch.zeros((self.planning_horizon, self.candidates, 1))
+            beliefs = torch.zeros((self.planning_horizon, self.candidates, H))
+            # TODO: Policy network forward call, rollout()
+            for i in range(self.candidates):
+                belief_list, logp_list, actions_raw, exp_reward, cost_list = self.policy.rollout(belief, state, self.transition_model, self.cost_model, self.reward_model, self.planning_horizon)
+                # if exp_cost <= C-kappa:
+                #     feasible_set_idx.append(traj)
+                costs[:, i] = cost_list
+                returns[i] = exp_reward
+                actions[:, i, :] = actions_raw
+                logplist[:, i, :] = logp_list[:, 0]
+                beliefs[:, i, :] = belief_list
+
+            # actions = (action_mean + action_std_dev * torch.randn(self.planning_horizon, B, self.candidates, self.action_size, device=action_mean.device)).view(self.planning_horizon, B * self.candidates, self.action_size)  # Sample actions (time x (batch x candidates) x actions)
             actions.clamp_(min=self.min_action, max=self.max_action)  # Clip action range
             # Sample next states
-            beliefs, states, _, states_std = self.transition_model(state, actions, belief)
+            # beliefs, states, _, states_std = self.transition_model(state, actions, belief)
+
+
             # Calculate expected returns (technically sum of rewards over planning horizon)
-            returns = self.reward_model(beliefs.view(-1, H), states.view(-1, Z)).view(self.planning_horizon, -1).mean(dim=0)
+            # returns = self.reward_model(beliefs.view(-1, H), states.view(-1, Z)).view(self.planning_horizon, -1).mean(dim=0)
             objective = returns
             if self.cost_constrained:
-                costs = self.cost_model(beliefs.view(-1, H), states.view(-1, Z)).view(self.planning_horizon, -1)
+                # costs = self.cost_model(beliefs.view(-1, H), states.view(-1, Z)).view(self.planning_horizon, -1)
                 costs += self._fixed_cost_penalty
                 uncertainty = self.one_step_ensemble.compute_uncertainty(beliefs, actions)
                 if self.penalize_uncertainty:
