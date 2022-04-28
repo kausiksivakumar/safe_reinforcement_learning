@@ -35,7 +35,9 @@ python plot.py 2022-04-15_ppo_PointGoal1/2022-04-15_21-45-36-ppo_PointGoal1_s0 2
 # To install environment
 
 `conda env create -f environment.yml`
-To add the environment packages in your own conda environment 
+
+##To add the environment packages in your own conda environment 
+
 `conda env update --file environment.yml --prune`
 
 # If running CAP
