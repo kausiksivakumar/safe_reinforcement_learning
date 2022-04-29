@@ -54,8 +54,9 @@ python plot.py 2022-04-15_ppo_PointGoal1/2022-04-15_21-45-36-ppo_PointGoal1_s0 2
 python3 cap-planet/run_cap_planet.py --env Safexp-PointGoal1-v0 --cost-limit 0 --binary-cost --cost-constrained --penalize-uncertainty --learn-kappa --penalty-kappa 0.1 --disable-cuda --symbolic-env
 ```
 # If running CAP with CUDA
-
+```
 python3 cap-planet/run_cap_planet.py --env Safexp-PointGoal1-v0 --cost-limit 0 --binary-cost --cost-constrained --penalize-uncertainty --learn-kappa --penalty-kappa 0.1 --symbolic-env
+```
 
 # To run CAP
 1) Modify the setup file (i.e) comment the `mujoco-py==2.0.2.7` requirement since we already have `mujoco-py<2.2,>=2.1`
