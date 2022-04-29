@@ -57,7 +57,7 @@ class MPCPlanner(torch.nn.Module):
         belief, state = belief.unsqueeze(dim=1).expand(B, self.candidates, H).reshape(-1, H), state.unsqueeze(dim=1).expand(B, self.candidates, Z).reshape(-1, Z)
         # Initialize factorized belief over action sequences q(a_t:t+H) ~ N(0, I)
         action_mean, action_std_dev = torch.zeros(self.planning_horizon, B, 1, self.action_size, device=belief.device), torch.ones(self.planning_horizon, B, 1, self.action_size, device=belief.device)
-        obj = 0
+        obj = torch.tensor(0).to(torch.float).clone().detach().requires_grad_(True)
         for _ in range(self.optimisation_iters):
             # Evaluate J action sequences from the current belief (over entire sequence at once, batched over particles)
             returns = torch.zeros(self.candidates)
