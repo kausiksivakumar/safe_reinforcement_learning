@@ -58,8 +58,11 @@ class TransitionModel(jit.ScriptModule):
         _state = prior_states[t] if observations is None else posterior_states[t]  # Select appropriate previous state
         _state = _state if nonterminals is None else _state * nonterminals[t]  # Mask if previous transition was terminal
         # Compute belief (deterministic hidden state)
+        if(len(actions.shape)==3):
+          beliefs[t+1], prior_states[t + 1], prior_means[t+1], prior_std_devs[t+1] = self.forward_new(_state, actions[:][t], beliefs[t])
+        else:
+          beliefs[t+1], prior_states[t + 1], prior_means[t+1], prior_std_devs[t+1] = self.forward_new(_state, actions[t], beliefs[t])
 
-        beliefs[t+1], prior_states[t + 1], prior_means[t+1], prior_std_devs[t+1] = self.forward_new(_state, actions[t], beliefs[t])
         if observations is not None:
           # Compute state posterior by applying transition dynamics and using current observation
           t_ = t - 1  # Use t_ to deal with different time indexing for observations
