@@ -114,12 +114,14 @@ class MPCPlanner(torch.nn.Module):
             loglist_elite = logplist[:, topk.view(-1)]
             ret = returns[topk.view(-1)] - baseline
             obj += -((torch.diag(ret) @ loglist_elite).mean(axis=1)).mean()
+            # print ("obj: ", obj)
 
         obj /= self.optimisation_iters
 
         self.policy.optimizer.zero_grad()
         obj.mean().backward()
-        torch.nn.utils.clip_grad_norm_(self.policy.parameters(), 1.0000)
+        # print ("mean obj: ", obj)
+        torch.nn.utils.clip_grad_norm_(self.policy.parameters(), 1000)
         self.optimizer.step()
 
         # Copy new weights into old policy:
