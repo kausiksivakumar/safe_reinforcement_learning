@@ -168,6 +168,7 @@ if args.models is not '' and os.path.exists(args.models):
   planner_state = planner.state_dict()
   planner_state.update(model_dicts['planner'])
   planner.load_state_dict(planner_state)
+  policy.policy.load_state_dict(model_dicts['policy'])
   metrics = torch.load(os.path.join(os.path.dirname(args.models), 'metrics.pth'))
 global_prior = Normal(torch.zeros(args.batch_size, args.state_size, device=args.device), torch.ones(args.batch_size, args.state_size, device=args.device))  # Global prior N(0, I)
 free_nats = torch.full((1, ), args.free_nats, dtype=torch.float32, device=args.device)  # Allowed deviation in KL divergence
@@ -378,6 +379,7 @@ for episode in tqdm(range(metrics['episodes'][-1] + 1, args.episodes + 1), total
     planner_state = {k: v for k, v in planner.state_dict().items() if 'model' not in k}
     torch.save({'transition_model': transition_model.state_dict(), 'observation_model': observation_model.state_dict(),
                 'reward_model': reward_model.state_dict(), 'cost_model': cost_model.state_dict(), 'encoder': encoder.state_dict(),
+                'policy_model': policy.policy.state_dict(),
                 'one_step_ensemble': one_step_ensemble.state_dict(), 'optimiser': optimiser.state_dict(), 'planner': planner_state},
                 os.path.join(results_dir, 'models_%d.pth' % episode))
     if args.checkpoint_experience:

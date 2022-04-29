@@ -57,6 +57,7 @@ class MPCPlanner(torch.nn.Module):
         belief, state = belief.unsqueeze(dim=1).expand(B, self.candidates, H).reshape(-1, H), state.unsqueeze(dim=1).expand(B, self.candidates, Z).reshape(-1, Z)
         # Initialize factorized belief over action sequences q(a_t:t+H) ~ N(0, I)
         action_mean, action_std_dev = torch.zeros(self.planning_horizon, B, 1, self.action_size, device=belief.device), torch.ones(self.planning_horizon, B, 1, self.action_size, device=belief.device)
+        obj = 0
         for _ in range(self.optimisation_iters):
             # Evaluate J action sequences from the current belief (over entire sequence at once, batched over particles)
             returns = torch.zeros(self.candidates)
@@ -65,14 +66,15 @@ class MPCPlanner(torch.nn.Module):
             logplist = torch.zeros((self.planning_horizon, self.candidates, 1))
             beliefs = torch.zeros((self.planning_horizon, self.candidates, H))
             # TODO: Policy network forward call, rollout()
+
             for i in range(self.candidates):
-                belief_list, logp_list, actions_raw, exp_reward, cost_list = self.policy.rollout(belief, state, self.transition_model, self.cost_model, self.reward_model, self.planning_horizon)
+                belief_list, logp_list, actions_raw, exp_reward, cost_list = self.policy.rollout(belief[i, :], state[i, :], self.transition_model, self.cost_model, self.reward_model, self.planning_horizon)
                 # if exp_cost <= C-kappa:
                 #     feasible_set_idx.append(traj)
                 costs[:, i] = cost_list
                 returns[i] = exp_reward
                 actions[:, i, :] = actions_raw
-                logplist[:, i, :] = logp_list[:, 0]
+                logplist[:, i, :] = logp_list[:]
                 beliefs[:, i, :] = belief_list
 
             # actions = (action_mean + action_std_dev * torch.randn(self.planning_horizon, B, self.candidates, self.action_size, device=action_mean.device)).view(self.planning_horizon, B * self.candidates, self.action_size)  # Sample actions (time x (batch x candidates) x actions)
@@ -105,7 +107,30 @@ class MPCPlanner(torch.nn.Module):
             best_actions = actions[:, topk.view(-1)].reshape(self.planning_horizon, B, self.top_candidates, self.action_size)
             # Update belief with new means and standard deviations
             action_mean, action_std_dev = best_actions.mean(dim=2, keepdim=True), best_actions.std(dim=2, unbiased=False, keepdim=True)
+
+            ##########################
+
+            baseline = returns[topk.view(-1)].mean()
+            loglist_elite = logplist[:, topk.view(-1)]
+            ret = returns[topk.view(-1)] - baseline
+            obj += -((torch.diag(ret) @ loglist_elite).mean(axis=1)).mean()
+
+        obj /= self.optimisation_iters
+
+        self.policy.optimizer.zero_grad()
+        obj.mean().backward()
+        torch.nn.utils.clip_grad_norm_(self.policy.parameters(), 1.0000)
+        self.optimizer.step()
+
+        # Copy new weights into old policy:
+
+    # self.policy_old.load_state_dict(self.policy.state_dict())
+
+            ###########################
             # Return first action mean µ_t
         if self.penalize_uncertainty:
             self.uncertainty_last_step = uncertainty[:, topk.view(-1)].reshape(self.planning_horizon, B, self.top_candidates).mean(2).cpu()
-        return action_mean[0].squeeze(dim=1)
+        # return action_mean[0].squeeze(dim=1)
+
+        a_ret, logp_pi, _, _ = self.policy.evaluate(state)
+        return a_ret

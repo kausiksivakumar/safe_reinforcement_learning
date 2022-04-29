@@ -77,19 +77,20 @@ class PPO:
         state = torch.FloatTensor(state.reshape(1, -1)).to(self.device)
         return self.policy_old.act(state, memory).cpu().data.numpy().flatten()
 
-    def rollout(self, initial_belief, initial_state, dynamics_model, cost_model, reward_model, planning_horizon):
-        curr_state = torch.tensor(initial_state)
-        curr_belief = torch.tensor(initial_belief)
+    def rollout(self, initial_belief, initial_state, transition_model, cost_model, reward_model, planning_horizon):
+        curr_state = initial_state.clone().detach().requires_grad_(True).unsqueeze(0)
+        curr_belief = initial_belief.clone().detach().requires_grad_(True).unsqueeze(0)
         exp_reward = 0
-        costs = torch.tensor(planning_horizon)
+        costs = torch.zeros(planning_horizon)
 
         actions_raw = torch.zeros((planning_horizon, 2))
         logp_list = torch.zeros((planning_horizon, 1))
-        belief_list = torch.zeros((planning_horizon, initial_belief.shape[1]))
+        belief_list = torch.zeros((planning_horizon, initial_belief.shape[0]))
         for i in range(planning_horizon):
             a, logp_pi, _, _ = self.policy.evaluate(curr_state)
             # print ("shapes: ", a.shape, curr_state.shape)
-            next_belief, next_state, _, states_std = dynamics_model(curr_state, a, curr_belief)
+
+            next_belief, next_state, _, _ = transition_model.forward_new(curr_state, a, curr_belief)
             # next_state = dynamics_model.predict(torch.cat((curr_state, a)))
             # next_state = next_state[0, :]
             cost = cost_model(next_belief, next_state)
@@ -103,79 +104,78 @@ class PPO:
             actions_raw[i] = a[:]
             logp_list[i] = logp_pi
 
-
         return belief_list, logp_list, actions_raw, exp_reward, costs
-
-    def CCEM(self, env, policy, dynamics_model, cost_model, reward_model, kappa, I, N, C=10, E=50, H=30):
-        initial_state = env.observation_space.sample()
-        obj = 0
-        for i in range(I):
-            cost_traj = torch.zeros((N))
-            reward_traj = torch.zeros((N))
-            action_sequence = torch.zeros((N, H, 2))
-            feasible_set_idx = []
-            loglist = torch.zeros((N, H))
-            for traj in range(N):
-                curr_state, logp_list, actions_raw, exp_reward, exp_cost = self.rollout(initial_state, dynamics_model,
-                                                                                        cost_model, reward_model, H=H)
-                if exp_cost <= C-kappa:
-                    feasible_set_idx.append(traj)
-                cost_traj[traj] = exp_cost
-                reward_traj[traj] = exp_reward
-                action_sequence[traj, :] = actions_raw
-                loglist[traj, :] = logp_list[:, 0]
-
-            # cost_traj                                                   =   np.array(cost_traj)
-            # reward_traj                                                 =   np.array(reward_traj)
-            # action_sequence                                             =   np.array(action_sequence)
-            feasible_set_idx = np.array(feasible_set_idx)
-            # elite_set_idxs                                              =   np.zeros((E,))
-            # logp_list                                                   =   np.array(loglist)
-
-            if len(feasible_set_idx) < E:
-                sorted_idxs = torch.argsort(cost_traj)
-                elite_set_idxs = sorted_idxs[:E]
-
-            else:
-                sorted_idxs = torch.argsort(-reward_traj)
-                elite_set_idxs = torch.where(cost_traj[sorted_idxs] < C)[0][:E]
-
-            baseline = reward_traj[elite_set_idxs].mean()
-            ret = reward_traj[elite_set_idxs] - baseline
-            loglist_elite = loglist[elite_set_idxs]
-            obj += -((torch.diag(ret) @ loglist_elite).mean(axis=1)).mean()
-
-        obj /= I
-        return (obj)
-
-    def update(self, env, dynamics_model, cost_model, reward_model, kappa, K_epochs = 5, I =1, N =50,C=10,E=50, H=30):
-        # Monte Carlo estimate of rewards:
-        '''
-        rewards = []
-        discounted_reward = 0
-        for reward, is_terminal in zip(reversed(memory.rewards), reversed(memory.is_terminals)):
-            if is_terminal:
-                discounted_reward = 0
-            discounted_reward = reward + (self.gamma * discounted_reward)
-            rewards.insert(0, discounted_reward)
-
-        # Normalizing the rewards:
-        rewards = torch.tensor(rewards, dtype=torch.float32).to(device)
-        rewards = (rewards - rewards.mean()) / (rewards.std() + 1e-5)
-
-        # convert list to tensor
-        old_states = torch.squeeze(torch.stack(memory.states).to(device), 1).detach()
-        old_actions = torch.squeeze(torch.stack(memory.actions).to(device), 1).detach()
-        old_logprobs = torch.squeeze(torch.stack(memory.logprobs), 1).to(device).detach()
-        '''
-        # Optimize policy for K epochs:
-        for _ in tqdm.tqdm(range(K_epochs)):
-            loss = self.CCEM(env, self.policy, dynamics_model, cost_model, reward_model, kappa=kappa, I=I, N=N, C=C, E=E, H=H)
-            # take gradient step
-            self.optimizer.zero_grad()
-            loss.mean().backward()
-            torch.nn.utils.clip_grad_norm_(self.policy.parameters(), 1.0000)
-            self.optimizer.step()
-
-        # Copy new weights into old policy:
-        self.policy_old.load_state_dict(self.policy.state_dict())
+    #
+    # def CCEM(self, env, policy, dynamics_model, cost_model, reward_model, kappa, I, N, C=10, E=50, H=30):
+    #     initial_state = env.observation_space.sample()
+    #     obj = 0
+    #     for i in range(I):
+    #         cost_traj = torch.zeros((N))
+    #         reward_traj = torch.zeros((N))
+    #         action_sequence = torch.zeros((N, H, 2))
+    #         feasible_set_idx = []
+    #         loglist = torch.zeros((N, H))
+    #         for traj in range(N):
+    #             curr_state, logp_list, actions_raw, exp_reward, exp_cost = self.rollout(initial_state, dynamics_model,
+    #                                                                                     cost_model, reward_model, H=H)
+    #             if exp_cost <= C-kappa:
+    #                 feasible_set_idx.append(traj)
+    #             cost_traj[traj] = exp_cost
+    #             reward_traj[traj] = exp_reward
+    #             action_sequence[traj, :] = actions_raw
+    #             loglist[traj, :] = logp_list[:, 0]
+    #
+    #         # cost_traj                                                   =   np.array(cost_traj)
+    #         # reward_traj                                                 =   np.array(reward_traj)
+    #         # action_sequence                                             =   np.array(action_sequence)
+    #         feasible_set_idx = np.array(feasible_set_idx)
+    #         # elite_set_idxs                                              =   np.zeros((E,))
+    #         # logp_list                                                   =   np.array(loglist)
+    #
+    #         if len(feasible_set_idx) < E:
+    #             sorted_idxs = torch.argsort(cost_traj)
+    #             elite_set_idxs = sorted_idxs[:E]
+    #
+    #         else:
+    #             sorted_idxs = torch.argsort(-reward_traj)
+    #             elite_set_idxs = torch.where(cost_traj[sorted_idxs] < C)[0][:E]
+    #
+    #         baseline = reward_traj[elite_set_idxs].mean()
+    #         ret = reward_traj[elite_set_idxs] - baseline
+    #         loglist_elite = loglist[elite_set_idxs]
+    #         obj += -((torch.diag(ret) @ loglist_elite).mean(axis=1)).mean()
+    #
+    #     obj /= I
+    #     return (obj)
+    #
+    # def update(self, env, dynamics_model, cost_model, reward_model, kappa, K_epochs = 5, I =1, N =50,C=10,E=50, H=30):
+    #     # Monte Carlo estimate of rewards:
+    #     '''
+    #     rewards = []
+    #     discounted_reward = 0
+    #     for reward, is_terminal in zip(reversed(memory.rewards), reversed(memory.is_terminals)):
+    #         if is_terminal:
+    #             discounted_reward = 0
+    #         discounted_reward = reward + (self.gamma * discounted_reward)
+    #         rewards.insert(0, discounted_reward)
+    #
+    #     # Normalizing the rewards:
+    #     rewards = torch.tensor(rewards, dtype=torch.float32).to(device)
+    #     rewards = (rewards - rewards.mean()) / (rewards.std() + 1e-5)
+    #
+    #     # convert list to tensor
+    #     old_states = torch.squeeze(torch.stack(memory.states).to(device), 1).detach()
+    #     old_actions = torch.squeeze(torch.stack(memory.actions).to(device), 1).detach()
+    #     old_logprobs = torch.squeeze(torch.stack(memory.logprobs), 1).to(device).detach()
+    #     '''
+    #     # Optimize policy for K epochs:
+    #     for _ in tqdm.tqdm(range(K_epochs)):
+    #         loss = self.CCEM(env, self.policy, dynamics_model, cost_model, reward_model, kappa=kappa, I=I, N=N, C=C, E=E, H=H)
+    #         # take gradient step
+    #         self.optimizer.zero_grad()
+    #         loss.mean().backward()
+    #         torch.nn.utils.clip_grad_norm_(self.policy.parameters(), 1.0000)
+    #         self.optimizer.step()
+    #
+    #     # Copy new weights into old policy:
+    #     self.policy_old.load_state_dict(self.policy.state_dict())
