@@ -6,7 +6,11 @@ Environment: Safexp-PointGoal1-v0
 1) Create conda virtual encironment with python 3.6 (Only use python 3.6, mujoco_py installation fails otherwise)
 2) Install `safety_gym` from https://github.com/openai/safety-gym and Mujoco by following the steps
 3) Edit or comment `mujoco` in the seup.py under `/safety-gym` and add `mujoco-py<2.2,>=2.1` instead
-4) Install starter rl kit from https://github.com/openai/safety-starter-agents and do the same as 3 for this environment as well
+4) CONDA INSTALL FOR EVERYTHING ELSE
+5) sudo apt-get install libglew-dev
+6) sudo apt-get install --reinstall libglvnd0
+
+5) Install starter rl kit from https://github.com/openai/safety-starter-agents and do the same as 3 for this environment as well
 
 
 
