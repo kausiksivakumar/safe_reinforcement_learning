@@ -5,12 +5,12 @@ Environment: Safexp-PointGoal1-v0
 #Installation
 1) Create conda virtual encironment with python 3.6 (Only use python 3.6.13, mujoco_py installation fails otherwise)
 2) Copy mujoco210 folder
-3) pip install -U 'mujoco-py<2.2,>=2.1'
-4) sudo apt install libosmesa6-dev libgl1-mesa-glx libglfw3
-5) sudo ln -s /usr/lib/x86_64-linux-gnu/libGL.so.1 /usr/lib/x86_64-linux-gnu/libGL.so
+3) `pip install -U 'mujoco-py<2.2,>=2.1'`
+4) `sudo apt install libosmesa6-dev libgl1-mesa-glx libglfw3`
+5) `sudo ln -s /usr/lib/x86_64-linux-gnu/libGL.so.1 /usr/lib/x86_64-linux-gnu/libGL.so`
 6) CONDA INSTALL FOR EVERYTHING ELSE - numpy, clff, patchelf, imageio
-7) sudo apt-get install libglew-dev
-8) sudo apt-get install --reinstall libglvnd0
+7) `sudo apt-get install libglew-dev`
+8) `sudo apt-get install --reinstall libglvnd0`
 9) Install `safety_gym` from https://github.com/openai/safety-gym and Mujoco by following the steps
 10) Edit or comment `mujoco` in the seup.py under `/safety-gym` and add `mujoco-py<2.2,>=2.1` instead
 11) Install starter rl kit from https://github.com/openai/safety-starter-agents and do the same as 3 for this environment as well
