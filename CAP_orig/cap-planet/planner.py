@@ -54,16 +54,18 @@ class MPCPlanner(torch.nn.Module):
     # @jit.script_method
     def forward(self, belief, state):
         B, H, Z = belief.size(0), belief.size(1), state.size(1)
+        state_unshaped = state
         belief, state = belief.unsqueeze(dim=1).expand(B, self.candidates, H).reshape(-1, H), state.unsqueeze(dim=1).expand(B, self.candidates, Z).reshape(-1, Z)
         # Initialize factorized belief over action sequences q(a_t:t+H) ~ N(0, I)
         action_mean, action_std_dev = torch.zeros(self.planning_horizon, B, 1, self.action_size, device=belief.device), torch.ones(self.planning_horizon, B, 1, self.action_size, device=belief.device)
-        obj = torch.tensor(0).to(torch.float).clone().detach().to(torch.device("cuda")).requires_grad_(True)
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        obj = torch.tensor(0).to(torch.float).clone().detach().to(device).requires_grad_(True)
         for _ in range(self.optimisation_iters):
             # Evaluate J action sequences from the current belief (over entire sequence at once, batched over particles)
-            returns = torch.zeros(self.candidates).clone().detach().to(torch.device("cuda")).requires_grad_(True)
-            costs = torch.zeros(self.planning_horizon, self.candidates).clone().detach().to(torch.device("cuda")).requires_grad_(True)
+            returns = torch.zeros(self.candidates).clone().detach().to(device).requires_grad_(True)
+            costs = torch.zeros(self.planning_horizon, self.candidates).clone().detach().to(device).requires_grad_(True)
             actions = torch.zeros((self.planning_horizon, self.candidates, self.action_size))
-            logplist = torch.zeros((self.planning_horizon, self.candidates, 1)).clone().detach().to(torch.device("cuda")).requires_grad_(True)
+            logplist = torch.zeros((self.planning_horizon, self.candidates, 1)).clone().detach().to(device).requires_grad_(True)
             beliefs = torch.zeros((self.planning_horizon, self.candidates, H))
             # TODO: Policy network forward call, rollout()
 
@@ -86,11 +88,11 @@ class MPCPlanner(torch.nn.Module):
             # Calculate expected returns (technically sum of rewards over planning horizon)
             # returns = self.reward_model(beliefs.view(-1, H), states.view(-1, Z)).view(self.planning_horizon, -1).mean(dim=0)
             objective = returns
-            costs    = costs.to(torch.device("cuda"))
+            costs    = costs.to(device)
             if self.cost_constrained:
                 # costs = self.cost_model(beliefs.view(-1, H), states.view(-1, Z)).view(self.planning_horizon, -1)
                 costs += self._fixed_cost_penalty
-                uncertainty = self.one_step_ensemble.compute_uncertainty(beliefs.to(torch.device("cuda")), actions.to(torch.device("cuda")))
+                uncertainty = self.one_step_ensemble.compute_uncertainty(beliefs.to(device), actions.to(device))
                 if self.penalize_uncertainty:
                     penalty_kappa = self.penalty_kappa.detach().to(costs.device)
                     costs += penalty_kappa * self.uncertainty_multiplier * uncertainty
@@ -136,5 +138,5 @@ class MPCPlanner(torch.nn.Module):
             self.uncertainty_last_step = uncertainty[:, topk.view(-1)].reshape(self.planning_horizon, B, self.top_candidates).mean(2).cpu()
         # return action_mean[0].squeeze(dim=1)
 
-        a_ret, logp_pi, _, _ = self.policy.policy.evaluate(state)
+        a_ret, logp_pi, _, _ = self.policy.policy.evaluate(state_unshaped)
         return a_ret

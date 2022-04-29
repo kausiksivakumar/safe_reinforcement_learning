@@ -88,11 +88,13 @@ class PPO:
         belief_list = torch.zeros((planning_horizon, initial_belief.shape[0]))
         for i in range(planning_horizon):
             a, logp_pi, _, _ = self.policy.evaluate(curr_state)
-            # print ("shapes: ", a.shape, curr_state.shape)
+            # print ("shapes: ", a.shape, curr_state.shape, curr_belief.shape, a.unsqueeze(0).shape)
 
-            next_belief, next_state, _, _ = transition_model.forward_new(curr_state, a, curr_belief)
+            next_belief, next_state, _, _ = transition_model(curr_state, a.unsqueeze(dim=0), curr_belief)
             # next_state = dynamics_model.predict(torch.cat((curr_state, a)))
             # next_state = next_state[0, :]
+            next_belief = next_belief.squeeze(0)
+            next_state = next_state.squeeze(0)
             cost = cost_model(next_belief, next_state)
             reward = reward_model(next_belief, next_state)
             belief_list[i, :] = curr_belief
