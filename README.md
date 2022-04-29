@@ -70,7 +70,7 @@ python3 cap-planet/run_cap_planet.py --env Safexp-PointGoal1-v0 --cost-limit 0 -
 3) `ctrl +B` and `D` to detach from the session (this does not mean that the tmux session is stopped)
 4) Use `tmux kill-session -t session_name` to stop the session
 5) ## Sessions running right now `CAP_original` : This is running the CAP-planet code
-6) ### Hyperparameters Run 1
+6) ### Hyperparameters Run 1 : CAP original
 `python3 cap-planet/run_cap_planet.py --env Safexp-PointGoal1-v0 --binary-cost --cost-limit 0 --state-size 60 --belief-size 60 --hidden-size 60 --cost-constrained --penalize-uncertainty --learn-kappa --penalty-kappa 0.1 --symbolic-env --max-episode-length 1000 --episodes 1000 --planning-horizon 50 --checkpoint-experience --cost-discount 1`
 Choosing Binary Cost(0,1) hence cost limit(C) =0 makes sense. State size is set as 60 because of gym observation size. action Repeat happening by default
 
