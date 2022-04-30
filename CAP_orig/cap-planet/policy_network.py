@@ -39,7 +39,7 @@ class ActorCritic(nn.Module):
 
         return action.detach()
 
-    def evaluate(self, state):
+    def evaluate(self, state, action=None):
         action_mean = self.actor(state)
 
         action_var = self.action_var.expand_as(action_mean)
@@ -47,7 +47,8 @@ class ActorCritic(nn.Module):
 
         dist = MultivariateNormal(action_mean, cov_mat)
 
-        action = dist.rsample()
+        if action is None:
+            action = dist.rsample()
 
         action_logprobs = dist.log_prob(action)
         dist_entropy = dist.entropy()
