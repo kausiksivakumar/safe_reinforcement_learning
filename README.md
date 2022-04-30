@@ -74,6 +74,6 @@ python3 cap-planet/run_cap_planet.py --env Safexp-PointGoal1-v0 --cost-limit 0 -
 ### Hyperparameters Run 1 : CAP original
 `python3 cap-planet/run_cap_planet.py --env Safexp-PointGoal1-v0 --binary-cost --cost-limit 0 --state-size 60 --belief-size 60 --hidden-size 60 --cost-constrained --penalize-uncertainty --learn-kappa --penalty-kappa 0.1 --symbolic-env --max-episode-length 1000 --episodes 1000 --planning-horizon 50 --checkpoint-experience --cost-discount 1`
 ### Hyperparameter Run2: CAP original and ours
-python3 cap-planet/run_cap_planet.py --env Safexp-PointGoal1-v0 --binary-cost --cost-limit 50 --state-size 60 --belief-size 60 --hidden-size 60 --cost-constrained --penalize-uncertainty --learn-kappa --penalty-kappa 0.1 --symbolic-env --max-episode-length 1000 --episodes 1000 --planning-horizon 50 --checkpoint-experience --cost-discount 1.0 --batch-size 256--id Safe_gym_experiment2 --action-noise 0.01
+'python3 cap-planet/run_cap_planet.py --env Safexp-PointGoal1-v0 --binary-cost --cost-limit 50 --state-size 60 --belief-size 60 --hidden-size 60 --cost-constrained --penalize-uncertainty --learn-kappa --penalty-kappa 0.1 --symbolic-env --max-episode-length 1000 --episodes 1000 --planning-horizon 50 --checkpoint-experience --cost-discount 1.0 --batch-size 256--id Safe_gym_experiment2 --action-noise 0.01'
 Choosing Binary Cost(0,1) hence cost limit(C) =0 makes sense. State size is set as 60 because of gym observation size. action Repeat happening by default
 
