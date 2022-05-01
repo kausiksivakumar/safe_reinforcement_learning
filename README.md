@@ -65,11 +65,13 @@ python3 cap-planet/run_cap_planet.py --env Safexp-PointGoal1-v0 --cost-limit 0 -
 ### TODO Add encoding at top of run_cap_planet
 
 # Running on EC2
+0) Create a new session- `tmux new -s [name]`
 1) Attach to session with given pem file (ssh) 
-2) Run `tmux attach-session -t CAP_original` This is where the CAP code is currently running
+2) Run `tmux attach-session -t CAP_original` This is where the CAP code is currently running or just run `tmux attach`. This will attach to the last session.
 3) `ctrl +B` and `D` to detach from the session (this does not mean that the tmux session is stopped)
-4) Use `tmux kill-session -t session_name` to stop the session
-5) ## Sessions running right now `CAP_original` : This is running the CAP-planet code
+4) scrolling: `ctrl+b` and `[`
+5) Use `tmux kill-session -t session_name` to stop the session
+ ## Sessions running right now: `CAP_original` : This is running the CAP-planet code
 
 # SCP to get files
 1) In order to SCP files to your local, first create a tar file of the directory e.g. `tar -zcvf Results_Hyper2.tar.gz results_hyper2_CAP_Jason`
@@ -81,7 +83,8 @@ python3 cap-planet/run_cap_planet.py --env Safexp-PointGoal1-v0 --cost-limit 0 -
 ### Hyperparameter Run2: CAP original and ours
 `python3 cap-planet/run_cap_planet.py --env Safexp-PointGoal1-v0 --binary-cost --cost-limit 50 --state-size 60 --belief-size 60 --hidden-size 60 --cost-constrained --penalize-uncertainty --learn-kappa --penalty-kappa 0.1 --symbolic-env --max-episode-length 1000 --episodes 1000 --planning-horizon 50 --checkpoint-experience --cost-discount 1.0 --batch-size 256--id Safe_gym_experiment2 --action-noise 0.01`
 Choosing Binary Cost(0,1) hence cost limit(C) =0 makes sense. State size is set as 60 because of gym observation size. action Repeat happening by default
-
 ### Hyperparmater Run 3: CAP original and ours -- changed kappa learning rate and cost limit
 #### CAP experiment terminated due to insufficent storage space
 `python3 cap-planet/run_cap_planet.py --env Safexp-PointGoal1-v0 --binary-cost --cost-limit 150 --state-size 60 --belief-size 60 --hidden-size 60 --cost-constrained --penalize-uncertainty --learn-kappa --penalty-kappa 0.01 --symbolic-env --max-episode-length 1000 --episodes 1000 --planning-horizon 50 --checkpoint-experience --cost-discount 1.0 --batch-size 256 --id Safe_gym_experiment3 --action-noise 0.01`
+### Hyperparmater Run 4: CAP original -- changed kappa learning rate and cost limit
+`python3 cap-planet/run_cap_planet.py --env Safexp-PointGoal1-v0 --binary-cost --cost-limit 100 --state-size 60 --belief-size 60 --hidden-size 60 --cost-constrained --penalize-uncertainty --learn-kappa --penalty-kappa 0.05 --symbolic-env --max-episode-length 1000 --episodes 1000 --planning-horizon 50 --checkpoint-experience --cost-discount 1.0 --batch-size 256 --id CAP_original_experiment4 --action-noise 0.01`
