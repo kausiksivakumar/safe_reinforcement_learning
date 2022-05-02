@@ -93,5 +93,9 @@ python3 cap-planet/run_cap_planet.py --env Safexp-PointGoal1-v0 --binary-cost --
 ### Hyperparmater Run 6: CAP original -- on advanced env Point Goal v2
 python3 cap-planet/run_cap_planet.py --env Safexp-PointGoal2-v0 --binary-cost --cost-limit 220 --state-size 60 --belief-size 128 --hidden-size 128 --cost-constrained  --penalty-kappa 0.0 --symbolic-env --max-episode-length 1000 --episodes 1000 --planning-horizon 64 --checkpoint-experience --cost-discount 1.0 --batch-size 128 --id CAP_original_exp6 --action-noise 0.01
 
+### Experiment 7: CAP_Orig total Ret plot
+ python3 cap-planet/run_cap_planet.py --env Safexp-PointGoal1-v0 --binary-cost --cost-limit 100 --state
+-size 60 --belief-size 128 --hidden-size 128 --cost-constrained --symbolic-env --max-episode-length 1000 --episodes 1000 --planning-horizon 64 --checkpoint-experience --cost-discount  1.0 --batch-size 128 --id CAP_orig_experiment7 --action-noise 0.01 --penalty-kappa=0.1 --learn-kappa
+
 ### Experiment 8: CAP_CCEM 
 ```python3 cap-planet/run_cap_planet.py --env Safexp-PointGoal1-v0 --binary-cost --cost-limit 100 --state-size 60 --belief-size 128 --hidden-size 128 --cost-constrained --symbolic-env --learn-kappa --max-episode-length 1000 --episodes 1000 --planning-horizon 64 --checkpoint-experience --cost-discount 1.0 --batch-size 128 --id CAP_orig_experiment8 --action-noise 0.01```
