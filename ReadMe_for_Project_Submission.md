@@ -10,7 +10,7 @@ Different branches of the repository contain code/results as indicated below:
 4. Our implemnetation of CAP-PG(Faster) (branch: CAP_CCEM_FAST)
 
 ## Maintainers
-For all questions and issues please reach to Swati Gupta(gswati@upenn), Jasleen Dhanoa(jkdhanoa@upenn) and Kausik Sivakumar(kausik@upenn). 
+For all questions and issues please reach to Swati Gupta(gswati@seas.upenn.edu), Jasleen Dhanoa(jkdhanoa@seas.upenn.edu) and Kausik Sivakumar(kausik@seas.upenn.edu). 
 
 ## Contributions
 - Kausik:
