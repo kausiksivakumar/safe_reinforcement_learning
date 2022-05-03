@@ -1,5 +1,6 @@
 # CAP-PG: CONSERVATIVE ADAPTIVE PENALTY WITH POLICY GRADIENTS FOR MODEL BASED SAFE RL
-### Safe Reinforcement Learning Project Code Repository
+### Topic: Safe Reinforcement Learning
+### ESE650 Final Project Repository
 
 This repository contains the following code/results on the following branches of the repository:
 1. Baseline Plots from running TRPO, PPO, Lagrangian-TRPO, Lagrangian-PPO and CPO adapted from safety-starter agents repo.
@@ -63,6 +64,7 @@ python plot.py 2022-04-15_ppo_PointGoal1/2022-04-15_21-45-36-ppo_PointGoal1_s0 2
 ```
 
 # Running CAP (our adaptation for safety-gym, our PG implementations)
+Please go to the appropriate branch (#######) to run the CAP code. The commands to run the code are the same.
 #### If running CAP without CUDA
 ```
 python3 cap-planet/run_cap_planet.py --env Safexp-PointGoal1-v0 --cost-limit 0 --binary-cost --cost-constrained --penalize-uncertainty --learn-kappa --penalty-kappa 0.1 --disable-cuda --symbolic-env
@@ -86,6 +88,6 @@ python3 cap-planet/run_cap_planet.py --env Safexp-PointGoal1-v0 --cost-limit 0 -
 
 ## Useful Repositories
 We acknowledge and thank the efforts of the maintainers of these wondeful repositories. It wouldn't have been possible to do thsi project without building up on their efforts!
-Github repo for the original CAP implementation: https://github.com/Redrew/CAP
-Github repo for safety-starter agents: https://github.com/openai/safety-starter-agents
-Github repo mujoco_py:https://github.com/openai/mujoco-py
+-Github repo for the original CAP implementation: https://github.com/Redrew/CAP
+-Github repo for safety-starter agents: https://github.com/openai/safety-starter-agents
+-Github repo mujoco_py:https://github.com/openai/mujoco-py
