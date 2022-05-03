@@ -4,10 +4,9 @@
 This repository contains the code/results corresponding to our ESE650 Final Project on Safe Reinforcement Learning. 
 
 Different branches of the repository contain code/results as indicated below:
-1. Baseline Plots from running TRPO, PPO, Lagrangian-TRPO, Lagrangian-PPO and CPO (adapted from safety-starter agents repo)(available on all branches)
-2. CAP adaption for safety-gym environment (branch: CAP_original)
-3. Our implemnetation of CAP-PG(very Slow) (branch: CAP_CCEM)
-4. Our implemnetation of CAP-PG(Faster) (branch: CAP_CCEM_FAST)
+1. CAP adaption for safety-gym environment (branch: CAP_original)
+2. Our implemnetation of CAP-PG(very Slow) (branch: CAP_CCEM)
+3. Our implemnetation of CAP-PG(Faster) (branch: CAP_CCEM_FAST)
 
 ## Maintainers
 For all questions and issues please reach to Swati Gupta(gswati@seas.upenn.edu), Jasleen Dhanoa(jkdhanoa@seas.upenn.edu) and Kausik Sivakumar(kausik@seas.upenn.edu). 
