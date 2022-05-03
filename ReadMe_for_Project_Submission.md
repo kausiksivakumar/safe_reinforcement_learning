@@ -51,6 +51,7 @@ Pytorch needs to be installed and requires the appropriate version of CUDA is ru
 4) Run CAP follwing commands given below:
 ## Running on EC2 instance(optional)
 *The EC2 instances needs all of the above installations.*
+
 0) Create an EC2 instance and ssh into it using pem file 
 1) Create a new tmux session- `tmux new -s [name]`
 2) Run the CAP code by specifying the hyperparameters as shown below.
