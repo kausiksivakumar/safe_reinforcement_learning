@@ -88,7 +88,7 @@ python3 cap-planet/run_cap_planet.py --env Safexp-PointGoal1-v0 --cost-limit 0 -
 # Comments/Discussion
 
 # Useful Repositories
-We acknowledge and thank the efforts of the maintainers of these wondeful repositories. It wouldn't have been possible to do this project without building up on their efforts!
+We acknowledge and thank the efforts of the maintainers of these wondeful repositories. It wouldn't have been possible to do this project without building up on top of their efforts!
 - Github repo for the original CAP implementation: https://github.com/Redrew/CAP
 - Github repo for safety-starter agents: https://github.com/openai/safety-starter-agents
 - Github repo mujoco_py:https://github.com/openai/mujoco-py
