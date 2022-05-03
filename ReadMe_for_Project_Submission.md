@@ -17,11 +17,6 @@ For all questions and issues please reach to Swati Gupta(gswati@seas.upenn.edu),
 - Swati: CAP, CAP_PG, CAP_PG_FAST, Cost model, Running on AWS, Hyperparameter tuning, Installation and building environment
 - Jasleen: Baselines, CAP, CAP_PG, CAP_PG_FAST, Reward model, Running on AWS, Hyperparameter tuning, Installation and building environment
 
-# Clean Up of Repo needed
-Remove plots and branches that are not needed
-More documenttaion for the branches and how to run them
-Plus expected results
-
 # Installations needed for running this repository
 ## Mujoco(This is the trickiest step!)
 1) Create conda virtual encironment with python 3.6 (Use only python 3.6.13, mujoco_py installation fails otherwise)
@@ -65,14 +60,13 @@ Pytorch needs to be installed and requires the appropriate version of CUDA if ru
 - task_list = ['goal1', 'goal2', 'button1', 'button2', 'push1', 'push2']
 - algo_list = ['ppo', 'ppo_lagrangian', 'trpo', 'trpo_lagrangian', 'cpo']
 3) Choose the robot, task and algo to create to train on a suitable environment. In our paper, we have run all experiments on point goal1 environment for all of the above algorithms. e.g. `time python experiment.py --algo cpo --task goal1 --robot point --seed 20 --cpu 8`
-# 4) Our compiled results for Baselines are available under: ######################################`
-5) In order to perform plotting use the plot.py script provided in safety-starter-agents code. eg:
+4) In order to perform plotting use the plot.py script provided in safety-starter-agents code. eg:
 ```
 python plot.py 2022-04-15_ppo_PointGoal1/2022-04-15_21-45-36-ppo_PointGoal1_s0 2022-04-16_trpo_PointGoal1/2022-04-16_00-25-36-trpo_PointGoal1_s0 ppo_lagrangian_PointGoal1/ 2022-04-14_20-51-30-trpo_lagrangian_PointGoal1_s20/ 2022-04-15_01-23-25-cpo_PointGoal1_s20/ --legend 'PPO' 'TRPO' 'PPO Lagrangian' 'TRPO Lagrangian' 'CPO'  --value 'CostRate' 'Entropy' 'KL' 'AverageEpRet' 'AverageEpCost' --smooth 10 
 ```
 
 # Running CAP (our adaptation for safety-gym, our PG implementations)
-# Please go to the appropriate branch (#######) to run the CAP code. The commands to run the code are the same.
+Please go to the appropriate branch to run the CAP code as given above. The commands to run the code are the same.
 #### If running CAP without CUDA
 ```
 python3 cap-planet/run_cap_planet.py --env Safexp-PointGoal1-v0 --cost-limit 0 --binary-cost --cost-constrained --penalize-uncertainty --learn-kappa --penalty-kappa 0.1 --disable-cuda --symbolic-env
@@ -81,11 +75,6 @@ python3 cap-planet/run_cap_planet.py --env Safexp-PointGoal1-v0 --cost-limit 0 -
 ```
 python3 cap-planet/run_cap_planet.py --env Safexp-PointGoal1-v0 --cost-limit 0 --binary-cost --cost-constrained --penalize-uncertainty --learn-kappa --penalty-kappa 0.1 --symbolic-env
 ```
-
-# CAP and CAP-PG Results:
-
-
-# Comments/Discussion
 
 # Useful Repositories
 We acknowledge and thank the efforts of the maintainers of these wondeful repositories. It wouldn't have been possible to do this project without building up on top of their efforts!
