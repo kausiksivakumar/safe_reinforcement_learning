@@ -8,7 +8,7 @@ This repository contains the following code/results on the following branches of
 4. Our implemnetation of CAP-PG(Faster)
 
 ## Maintainers
-For all questions and issues please reach to Swati Gupta(gswati@upenn), Kausik Sivakumar(kausik@upenn) and Jasleen Dhanoa(jkdhanoa@upenn). 
+For all questions and issues please reach to Swati Gupta(gswati@upenn), Jasleen Dhanoa(jkdhanoa@upenn) and Kausik Sivakumar(kausik@upenn). 
 
 ## Contributions:-
 Kausik:
