@@ -1,68 +1,75 @@
-# Safe Reinforcement Learning
+# CAP-PG: CONSERVATIVE ADAPTIVE PENALTY WITH POLICY GRADIENTS FOR MODEL BASED SAFE RL
+### Safe Reinforcement Learning Project Code Repository
+This repository contains :
+1. Baseline Plots from running TRPO, PPO, Lagrangian-TRPO, Lagrangian-PPO and CPO adapted from safety-starter agents repo.
+2. CAP adaption for safety-gym environment
+3. Our implemnetation of CAP-PG(very Slow)
+4. Our implemnetation of CAP-PG(Faster)
+
+## Contributions:-
+
+
+Github repo for the original CAP implementation: https://github.com/Redrew/CAP
+Github repo for safety-starter agents: https://github.com/openai/safety-starter-agents
+
+# Clean Up of Repo needed
+Remove plots and branches that are not needed
+More documenttaion for the branches and how to run them
+Plus expected results
+
 CAP adaptation for safety_gym environment
 
-Environment: Safexp-PointGoal1-v0
-#Installation
-1) Create conda virtual encironment with python 3.6 (Only use python 3.6.13, mujoco_py installation fails otherwise)
-2) Copy mujoco210 folder
-3) `pip install -U 'mujoco-py<2.2,>=2.1'`
-4) `sudo apt install libosmesa6-dev libgl1-mesa-glx libglfw3`
-5) `sudo ln -s /usr/lib/x86_64-linux-gnu/libGL.so.1 /usr/lib/x86_64-linux-gnu/libGL.so`
-6) CONDA INSTALL FOR EVERYTHING ELSE - numpy, clff, patchelf, imageio
+# Installations needed for running this repository
+## Mujoco(This is the trickiest step!)
+1) Create conda virtual encironment with python 3.6 (Use only python 3.6.13, mujoco_py installation fails otherwise)
+2) Install mujoco_py: 'pip3 install -U 'mujoco-py<2.2,>=2.1'
+3) Run `import mujoco_py` in python terminal. If there is no error proceed to check if your installation is done properly(step 10)
+4) If you face GLEW initalization error(especially on AWS): do steps 4-9
+5) `sudo apt install libosmesa6-dev libgl1-mesa-glx libglfw3`
+6) `sudo ln -s /usr/lib/x86_64-linux-gnu/libGL.so.1 /usr/lib/x86_64-linux-gnu/libGL.so`
 7) `sudo apt-get install libglew-dev`
 8) `sudo apt-get install --reinstall libglvnd0`
-9) Install `safety_gym` from https://github.com/openai/safety-gym and Mujoco by following the steps
-10) Edit or comment `mujoco` in the seup.py under `/safety-gym` and add `mujoco-py<2.2,>=2.1` instead
-11) Install starter rl kit from https://github.com/openai/safety-starter-agents and do the same as 3 for this environment as well
+9) Do CONDA INSTALL FOR EVERYTHING ELSE which might be missing while running `import mujoco_py` in python terminal e.g.- numpy, clff, patchelf, imageio 
+10) Check if your installation of mujoco_py is done properly by making an environment: https://github.com/openai/mujoco-py
+## Gym Installation
+1) Install gym via pip if it is not already installed: `pip install gym`
+## Safety Gym Installation
+1) Install `safety_gym`by following steps 1-3: `git clone https://github.com/openai/safety-gym.git`
+2) `cd safety-gym`
+3) `pip install -e .`
+4) Edit or comment `mujoco` in the seup.py under `/safety-gym` and add `mujoco-py<2.2,>=2.1` instead as we have mujoco210
+5) Check if the installation is done properly by making an environment:https://github.com/openai/safety-gym(Mujoco needs to be installed prior to this!)
+## Torch 
+Pytorch needs to be installed and requires the appropriate version of CUDA is running on GPU
+## CAP Installation
+1) In order to modify your existing environment to be able to run our adaptation of CAP code for safety-gym use the `environment.yml` file provided in the repository e.g. `conda env update --name <name> --file environment.yml --prune`
+2) Modify the setup file (i.e) comment the `mujoco-py==2.0.2.7` requirement since we already have `mujoco-py<2.2,>=2.1`
+3) Install mujoco200 from https://www.roboti.us/download.html alongside mujoco210(already installed)
+4) Run CAP follwing commands given below:
 
 
-
-# Evaluating Baseline (from safety-starter-pack)
-task: goal1, robot: point, algos: all
-
-robot_list = ['point', 'car', 'doggo']
-task_list = ['goal1', 'goal2', 'button1', 'button2', 'push1', 'push2']
-algo_list = ['ppo', 'ppo_lagrangian', 'trpo', 'trpo_lagrangian', 'cpo']
-    
-Ex:
-`time python experiment.py --algo cpo --task goal1 --robot point --seed 20`
-
- Add `--cpu` to use more than one core Ex `--cpu 4` to use 4 cores
- 
- # Dimensions of gym
- action_space - `Box(2,) [-1,1]`
- observation_space - `Box(60,) [-inf,inf]`
- 
-
-# Plotting
-In order to perform plotting use the plot.py script.
-Example:
+# Evaluating Baselines (from safety-starter-pack)
+1) Install starter RL kit from https://github.com/openai/safety-starter-agents for getting the Baselines code
+2) The following Robots, Tasks and RL-Algorithms are available for training and plotting in the safety-starter-agents code:
+    robot_list = ['point', 'car', 'doggo']
+    task_list = ['goal1', 'goal2', 'button1', 'button2', 'push1', 'push2']
+    algo_list = ['ppo', 'ppo_lagrangian', 'trpo', 'trpo_lagrangian', 'cpo']
+3) Choose the robot, task and algo to create to train on a suitable environment. In our paper, we have run all experiments on point goal1 environment for all of the above algorithms. e.g. `time python experiment.py --algo cpo --task goal1 --robot point --seed 20 --cpu 8`
+4) Our compiled results for Baselines are available under: `# #####################################`
+5) In order to perform plotting use the plot.py script provided in safety-starter-agents code. eg:
 ```
 python plot.py 2022-04-15_ppo_PointGoal1/2022-04-15_21-45-36-ppo_PointGoal1_s0 2022-04-16_trpo_PointGoal1/2022-04-16_00-25-36-trpo_PointGoal1_s0 ppo_lagrangian_PointGoal1/ 2022-04-14_20-51-30-trpo_lagrangian_PointGoal1_s20/ 2022-04-15_01-23-25-cpo_PointGoal1_s20/ --legend 'PPO' 'TRPO' 'PPO Lagrangian' 'TRPO Lagrangian' 'CPO'  --value 'CostRate' 'Entropy' 'KL' 'AverageEpRet' 'AverageEpCost' --smooth 10 
 ```
 
-# To install environment
-
-`conda env create -f environment.yml`
-
-## To add the environment packages in your own conda environment 
-
-`conda env update --name <name> --file environment.yml --prune`
-
-# If running CAP without CUDA
+## Running CAP (our adaptation for safety-gym, our PG implementations)
+#### If running CAP without CUDA
 ```
 python3 cap-planet/run_cap_planet.py --env Safexp-PointGoal1-v0 --cost-limit 0 --binary-cost --cost-constrained --penalize-uncertainty --learn-kappa --penalty-kappa 0.1 --disable-cuda --symbolic-env
 ```
-# If running CAP with CUDA
+#### If running CAP with CUDA
 ```
 python3 cap-planet/run_cap_planet.py --env Safexp-PointGoal1-v0 --cost-limit 0 --binary-cost --cost-constrained --penalize-uncertainty --learn-kappa --penalty-kappa 0.1 --symbolic-env
 ```
-
-# To run CAP
-1) Modify the setup file (i.e) comment the `mujoco-py==2.0.2.7` requirement since we already have `mujoco-py<2.2,>=2.1`
-2) Install requirements using the `environment.yml` with steps provided as above
-3) Install mujoco200 from https://www.roboti.us/download.html
-### TODO Add encoding at top of run_cap_planet
 
 # Running on EC2
 1) Attach to session with given pem file (ssh) 
