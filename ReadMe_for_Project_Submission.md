@@ -13,9 +13,9 @@ Different branches of the repository contain code/results as indicated below:
 For all questions and issues please reach to Swati Gupta(gswati@seas.upenn.edu), Jasleen Dhanoa(jkdhanoa@seas.upenn.edu) and Kausik Sivakumar(kausik@seas.upenn.edu). 
 
 ## Contributions
-- Kausik:
-- Swati:
-- Jasleen:
+- Kausik: CAP, CAP_PG, CAP_PG_FAST, Transition model, Running on AWS, Hyperparameter tuning, Installation and building environment
+- Swati: CAP, CAP_PG, CAP_PG_FAST, Cost model, Running on AWS, Hyperparameter tuning, Installation and building environment
+- Jasleen: Baselines, CAP, CAP_PG, CAP_PG_FAST, Reward model, Running on AWS, Hyperparameter tuning, Installation and building environment
 
 # Clean Up of Repo needed
 Remove plots and branches that are not needed
@@ -43,7 +43,7 @@ Plus expected results
 4) Edit or comment `mujoco` in the seup.py under `/safety-gym` and add `mujoco-py<2.2,>=2.1` instead as we have mujoco210
 5) Check if the installation is done properly by making an environment:https://github.com/openai/safety-gym(Mujoco needs to be installed prior to this!)
 ## Torch 
-Pytorch needs to be installed and requires the appropriate version of CUDA is running on GPU
+Pytorch needs to be installed and requires the appropriate version of CUDA if running on GPU
 ## CAP Installation
 1) In order to modify your existing environment to be able to run our adaptation of CAP code for safety-gym use the `environment.yml` file provided in the repository e.g. `conda env update --name <name> --file environment.yml --prune`
 2) Modify the setup file (i.e) comment the `mujoco-py==2.0.2.7` requirement since we already have `mujoco-py<2.2,>=2.1`
