@@ -3,11 +3,11 @@
 ### ESE650 Final Project Repository
 This repository contains the code/results corresponding to our ESE650 Final Project on Safe Reinforcement Learning. 
 
-Different branches of the repository contains code/results as indicated below:
+Different branches of the repository contain code/results as indicated below:
 1. Baseline Plots from running TRPO, PPO, Lagrangian-TRPO, Lagrangian-PPO and CPO (adapted from safety-starter agents repo)(available on all branches)
-2. CAP adaption for safety-gym environment (CAP_original)
-3. Our implemnetation of CAP-PG(very Slow) (CAP_CCEM)
-4. Our implemnetation of CAP-PG(Faster) (CAP_CCEM_FAST)
+2. CAP adaption for safety-gym environment (branch: CAP_original)
+3. Our implemnetation of CAP-PG(very Slow) (branch: CAP_CCEM)
+4. Our implemnetation of CAP-PG(Faster) (branch: CAP_CCEM_FAST)
 
 ## Maintainers
 For all questions and issues please reach to Swati Gupta(gswati@upenn), Jasleen Dhanoa(jkdhanoa@upenn) and Kausik Sivakumar(kausik@upenn). 
@@ -87,7 +87,7 @@ python3 cap-planet/run_cap_planet.py --env Safexp-PointGoal1-v0 --cost-limit 0 -
 # Comments/Discussion
 
 ## Useful Repositories
-We acknowledge and thank the efforts of the maintainers of these wondeful repositories. It wouldn't have been possible to do thsi project without building up on their efforts!
+We acknowledge and thank the efforts of the maintainers of these wondeful repositories. It wouldn't have been possible to do this project without building up on their efforts!
 - Github repo for the original CAP implementation: https://github.com/Redrew/CAP
 - Github repo for safety-starter agents: https://github.com/openai/safety-starter-agents
 - Github repo mujoco_py:https://github.com/openai/mujoco-py
