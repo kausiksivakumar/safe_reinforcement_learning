@@ -3,7 +3,7 @@
 ### ESE650 Final Project Repository
 
 This repository contains the following code/results on the following branches of the repository:
-1. Baseline Plots from running TRPO, PPO, Lagrangian-TRPO, Lagrangian-PPO and CPO adapted from safety-starter agents repo.
+1. Baseline Plots from running TRPO, PPO, Lagrangian-TRPO, Lagrangian-PPO and CPO (adapted from safety-starter agents repo)
 2. CAP adaption for safety-gym environment
 3. Our implemnetation of CAP-PG(very Slow)
 4. Our implemnetation of CAP-PG(Faster)
@@ -64,7 +64,7 @@ python plot.py 2022-04-15_ppo_PointGoal1/2022-04-15_21-45-36-ppo_PointGoal1_s0 2
 ```
 
 # Running CAP (our adaptation for safety-gym, our PG implementations)
-Please go to the appropriate branch (#######) to run the CAP code. The commands to run the code are the same.
+# Please go to the appropriate branch (#######) to run the CAP code. The commands to run the code are the same.
 #### If running CAP without CUDA
 ```
 python3 cap-planet/run_cap_planet.py --env Safexp-PointGoal1-v0 --cost-limit 0 --binary-cost --cost-constrained --penalize-uncertainty --learn-kappa --penalty-kappa 0.1 --disable-cuda --symbolic-env
