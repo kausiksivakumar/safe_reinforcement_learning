@@ -13,9 +13,9 @@ Different branches of the repository contains code/results as indicated below:
 For all questions and issues please reach to Swati Gupta(gswati@upenn), Jasleen Dhanoa(jkdhanoa@upenn) and Kausik Sivakumar(kausik@upenn). 
 
 ## Contributions
--Kausik:
--Swati:
--Jasleen:
+- Kausik:
+- Swati:
+- Jasleen:
 
 # Clean Up of Repo needed
 Remove plots and branches that are not needed
@@ -88,6 +88,6 @@ python3 cap-planet/run_cap_planet.py --env Safexp-PointGoal1-v0 --cost-limit 0 -
 
 ## Useful Repositories
 We acknowledge and thank the efforts of the maintainers of these wondeful repositories. It wouldn't have been possible to do thsi project without building up on their efforts!
--Github repo for the original CAP implementation: https://github.com/Redrew/CAP
--Github repo for safety-starter agents: https://github.com/openai/safety-starter-agents
--Github repo mujoco_py:https://github.com/openai/mujoco-py
+- Github repo for the original CAP implementation: https://github.com/Redrew/CAP
+- Github repo for safety-starter agents: https://github.com/openai/safety-starter-agents
+- Github repo mujoco_py:https://github.com/openai/mujoco-py
