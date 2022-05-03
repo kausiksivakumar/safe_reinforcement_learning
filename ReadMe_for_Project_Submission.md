@@ -61,9 +61,9 @@ Pytorch needs to be installed and requires the appropriate version of CUDA is ru
 # Evaluating Baselines (from safety-starter-pack)
 1) Install starter RL kit from https://github.com/openai/safety-starter-agents for getting the Baselines code
 2) The following Robots, Tasks and RL-Algorithms are available for training and plotting in the safety-starter-agents code:
-    robot_list = ['point', 'car', 'doggo']
-    task_list = ['goal1', 'goal2', 'button1', 'button2', 'push1', 'push2']
-    algo_list = ['ppo', 'ppo_lagrangian', 'trpo', 'trpo_lagrangian', 'cpo']
+- robot_list = ['point', 'car', 'doggo']
+- task_list = ['goal1', 'goal2', 'button1', 'button2', 'push1', 'push2']
+- algo_list = ['ppo', 'ppo_lagrangian', 'trpo', 'trpo_lagrangian', 'cpo']
 3) Choose the robot, task and algo to create to train on a suitable environment. In our paper, we have run all experiments on point goal1 environment for all of the above algorithms. e.g. `time python experiment.py --algo cpo --task goal1 --robot point --seed 20 --cpu 8`
 # 4) Our compiled results for Baselines are available under: ######################################`
 5) In order to perform plotting use the plot.py script provided in safety-starter-agents code. eg:
