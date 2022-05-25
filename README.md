@@ -11,11 +11,6 @@ Different branches of the repository contain code/results as indicated below:
 ## Maintainers
 For all questions and issues please reach to Swati Gupta(gswati@seas.upenn.edu), Jasleen Dhanoa(jkdhanoa@seas.upenn.edu) and Kausik Sivakumar(kausik@seas.upenn.edu). 
 
-## Contributions
-- Kausik: CAP, CAP_PG, CAP_PG_FAST, Transition model, Running on AWS, Hyperparameter tuning, Installation and building environment
-- Swati: CAP, CAP_PG, CAP_PG_FAST, Cost model, Running on AWS, Hyperparameter tuning, Installation and building environment
-- Jasleen: Baselines, CAP, CAP_PG, CAP_PG_FAST, Reward model, Running on AWS, Hyperparameter tuning, Installation and building environment
-
 # Installations needed for running this repository
 ## Mujoco(This is the trickiest step!)
 1) Create conda virtual encironment with python 3.6 (Use only python 3.6.13, mujoco_py installation fails otherwise)
@@ -75,7 +70,7 @@ python3 cap-planet/run_cap_planet.py --env Safexp-PointGoal1-v0 --cost-limit 0 -
 python3 cap-planet/run_cap_planet.py --env Safexp-PointGoal1-v0 --cost-limit 0 --binary-cost --cost-constrained --penalize-uncertainty --learn-kappa --penalty-kappa 0.1 --symbolic-env
 ```
 
-<<<<<<< HEAD
+<<<<<<< HEAD>>>>>>>>>>>
 # To run CAP
 1) Modify the setup file (i.e) comment the `mujoco-py==2.0.2.7` requirement since we already have `mujoco-py<2.2,>=2.1`
 2) Install requirements using the `environment.yml` with steps provided as above
